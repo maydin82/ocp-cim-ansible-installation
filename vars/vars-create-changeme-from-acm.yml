@@ -104,8 +104,8 @@ ocpnodes_bms: #put [] if there is no BM server
    scale_out: "no"    ###  set this to "yes" for scale out the cluster
 
 
-ocp_httpProxy: http://proxy.company.akb:8080
-ocp_httpsProxy: http://proxy.company.akb:8080
+ocp_httpProxy: http://proxy.company.com:8080
+ocp_httpsProxy: http://proxy.company.com:8080
 ocp_noProxy: .company.com,.companypreprod.com,company.com
 
 ocp_additionalca: |-
