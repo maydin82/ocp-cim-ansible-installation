@@ -1,0 +1,35 @@
+apiVersion: extensions.hive.openshift.io/v1beta1
+kind: AgentClusterInstall
+metadata:
+  labels:
+    cluster-name: {{ .Values.clusterName }}
+  name: {{ .Values.clusterName }}
+  namespace: {{ .Values.namespace_name }}
+spec:
+  proxy:
+    httpProxy: {{ .Values.httpProxy }}
+    httpsProxy: {{ .Values.httpsProxy }}
+    noProxy: {{ .Values.noProxy }}
+  clusterDeploymentRef:
+    name: {{ .Values.clusterName }}
+  imageSetRef:
+    name: {{ .Values.imageSetName }}
+  {{- if not (eq .Values.platformType "None") }}
+  ingressVIP: {{ .Values.ingressVIP }}
+  apiVIP: {{ .Values.apiVIP }}
+  {{- end }}
+  networking:
+    clusterNetwork:
+    - cidr: {{ .Values.clusterCIDR | default "10.128.0.0/14" }}
+      hostPrefix: {{ .Values.clusterHostPrefix | default 22 }}
+    networkType: {{ .Values.networkType | default "OVNKubernetes" }}
+    serviceNetwork:
+    - {{ .Values.serviceCIDR | default "172.30.0.0/16" }}
+    userManagedNetworking: {{ .Values.userManagedNetworking | default true }}
+  platformType: {{ .Values.platformType | default "None" }}
+  provisionRequirements:
+    controlPlaneAgents: {{ .Values.controlPlaneAgents | default 3 }}
+    workerAgents: {{ .Values.workerAgents | default 2 }}
+  sshPublicKey: {{ .Values.sshPublicKey }}
+  manifestsConfigMapRefs:
+    - name: router-configuration

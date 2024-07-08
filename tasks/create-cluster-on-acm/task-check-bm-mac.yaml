@@ -1,0 +1,24 @@
+- name: Create a var file
+  ansible.builtin.lineinfile:
+    path: ./macaddress_list.yml
+    line: "  {{ item.bm_name }}:"
+    create: yes
+
+- name: Get interface information
+  community.general.redfish_info:
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+    category: Systems
+    command: GetNicInventory
+  register: interface_info
+
+
+- name: Print MACAddress for matching nodes
+  ansible.builtin.lineinfile:
+    path: ./macaddress_list.yml
+    line: "    - {{ item.MACAddress }}"
+  loop: "{{ interface_info.redfish_facts.nic.entries[0][1] }}"
+  when:
+   - item.Id in ocpnodes_bms | map(attribute='interfaces') | flatten
+

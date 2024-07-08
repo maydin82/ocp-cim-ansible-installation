@@ -1,0 +1,87 @@
+{{- range $host := .Values.hosts }}
+---
+apiVersion: agent-install.openshift.io/v1beta1
+kind: NMStateConfig
+metadata:
+  labels:
+    cluster-name: {{ $.Values.clusterName }}
+  name: {{ $host.hostName }}
+  namespace: {{ $.Values.namespace_name }}
+spec:
+  config:
+    dns-resolver:
+      config:
+        server:
+        {{- range $.Values.dnsServers }}
+          - {{ . }}
+        {{- end }}
+        search:
+        {{- range $.Values.dnsSearchdomains }}
+          - {{ . }}
+        {{- end }}
+    interfaces:
+      {{- if eq (len (index $host.nics 0 "ports")) 2 }}
+      - ipv4:
+          enabled: false
+        ipv6:
+          enabled: false
+        link-aggregation:
+          mode: {{ index $host "bondType" | default "active-backup" }}
+          options:
+            {{- if eq (index $host "bondType") "802.3ad" }}
+            lacp_rate: 1
+            {{- else }}
+            all_slaves_active: delivered
+            miimon: "100"
+            {{- end }}
+          port:
+            {{- range $port := index $host.nics 0 "ports" }}
+            - {{ $port }}
+            {{- end }}
+        name: {{ index $host.nics 0 "nicName" }}
+        state: up
+        type: bond
+
+      - name: {{ index $host.nics 0 "nicName" }}.{{ $.Values.cluster_vlan_id }}
+        type: vlan
+        state: up
+        ipv4:
+          address:
+          - ip: {{ index $host.nics 0 "ipAddress" }}
+            prefix-length: {{ $.Values.subnetmask }}
+          dhcp: false
+          enabled: true
+        ipv6:
+          enabled: false
+        vlan:
+          base-iface: {{ index $host.nics 0 "nicName" }}
+          id: {{ $.Values.cluster_vlan_id }}
+
+        {{- else }}
+      - ipv4:
+          address:
+          - ip: {{ index $host.nics 0 "ipAddress" }}
+            prefix-length: {{ $.Values.subnetmask }}
+          dhcp: false
+          enabled: true
+        ipv6:
+          enabled: false
+        name: {{ index $host.nics 0 "nicName" }}
+        state: up
+      {{- end }}
+    routes:
+      config:
+      {{- $defaultGatewayInterface := index $host "defgwint" | default (index $host.nics 0 "nicName") }}
+      - destination: 0.0.0.0/0
+        next-hop-address: {{ $.Values.defaultGateway }}
+        next-hop-interface: {{ $defaultGatewayInterface }}
+        table-id: 254
+  interfaces:
+    {{- range $nic := $host.nics }}
+      {{- range $port := $nic.ports }}
+      {{- $mac := index $nic.macAddresses $port }}
+      - macAddress: {{ $mac }}
+        name: {{ $port }}
+      {{- end }}
+    {{- end }}
+{{- end }}

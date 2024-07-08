@@ -1,0 +1,33 @@
+
+    - name: Get  existing agents
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: Agent
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: all_agents
+      until: all_agents.resources | length == (ocpnodes_vms | length ) + (ocpnodes_bms | length)
+      retries: 180
+      delay: 10
+
+
+    - name: Get custom resource object names
+      set_fact:
+        custom_resource_names: "{{ all_agents.resources | map(attribute='metadata.name') | list }}"
+
+
+        
+    - name: Update custom resource objects
+      k8s:
+        state: present
+        definition: |
+          apiVersion: agent-install.openshift.io/v1beta1
+          kind: Agent
+          metadata:
+            namespace: "{{ ocp_cluster }}-deploy"
+            name: "{{ item }}"
+          spec:
+            approved: true
+      with_items: "{{ custom_resource_names }}"
+
+
+

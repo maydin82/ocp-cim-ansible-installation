@@ -1,0 +1,24 @@
+
+- name: Gather one specific VM
+  community.vmware.vmware_vm_info:
+    vm_name: "{{ item.vm_name }}"
+  register: vm_info
+  ignore_errors: true
+
+- debug:
+    var: vm_info
+
+- name: Power of {{ item.vm_name }}
+  community.vmware.vmware_guest:
+    name: "{{ item.vm_name }}"
+    state: poweredoff
+    folder: "{{ folder_name }}" 
+  when: vm_info.failed is false
+
+- name: Remove {{ item.vm_name }} from inventory
+  community.vmware.vmware_guest:
+    name: "{{ item.vm_name }}"
+    delete_from_inventory: false
+    state: absent
+  when: vm_info.failed is false
+

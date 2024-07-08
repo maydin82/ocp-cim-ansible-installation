@@ -1,0 +1,27 @@
+
+- name: Upload ISO to webserver
+  block:
+  
+  - name: Increment the retry count
+    set_fact:
+      retry_count: "{{ 0 if retry_count is undefined else retry_count | int + 1 }}"
+
+  - name: Upload the ISO file to the web server
+    shell: curl --fail -u username:password -F path={{ iso_name }} -X POST -F file=@/tmp/{{ iso_name }} {{ webserver_upload_url }} -k
+
+  - name: Check if ISO exists on the web server
+    uri:
+      url: "{{ webserver_url }}/{{ iso_name }}"
+      method: HEAD
+      validate_certs: false
+    register: iso_check
+
+  rescue:
+    - fail:
+        msg: Maximum retries of grouped tasks reached
+      when: retry_count | int == 5
+
+    - name: Sleep for 1 min before re-check web server
+      shell: sleep 60
+      
+    - include_tasks: tasks-upload-iso-to-webserver.yml

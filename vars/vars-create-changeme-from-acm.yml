@@ -1,0 +1,141 @@
+#ansible_python_interpreter: /usr/bin/python3
+#####  TODO  ########
+datacenter_name: "vcenterdc"  ### vcenter datacenter name
+cluster_name: "vcentercluster" ### vcenter cluster name
+datastore_name: "vcenterdatastore" ### vcenter datastore name
+folder_name: "vcenterfolder"  ### vcenter folder name
+network_name: "vcenternetwork"  ### vcenter network segment
+ocp_cluster_vlan_id: 116    ### is used if the BM bond is at trunk mode, but still needs to be defined, otherwise the ansible will fail (needs to be corrected TODOFORME)
+
+iso_name: "{{ ocp_cluster }}.iso"
+scale_out_iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+webserver_url: https://webserver.com   ### The web server url where the genarated ISOs are stored for BM installation  
+webserver_upload_url: https://webserver.com/upload  ### The web server url where the genarated ISOs will be uploaded. C
+
+ocp_domain: company.com   ### domain name for OCP cluster
+ocp_dnsservers: ### DNS server IPs for OCP cluster
+  - 10.10.10.10
+  - 10.10.10.11
+  - 10.10.10.12
+ocp_dnssearchdomains:
+  - company.com ### search domain for OCP cluster
+
+ocp_defaultgw: 192.168.0.1  ###  Default Gateway for OCP cluster  
+ocp_subnetmask: 24    ### subnet mask for machine network
+
+ocp_ntpservers: #NTP server IPs for OCP cluster
+  - 192.168.9.246  
+
+ocp_clusterCIDR: 10.128.0.0/14   ### OCP cluster network CIDR (add hostprefix as variable TODOFORME)
+ocp_serviceCIDR: 172.30.0.0/16   ### OCP service network CIDR 
+
+numberof_worker: 4 ### Total number of workers, infra nodes included
+
+ocpnodes_vms:
+  - vm_name: master01   ###  these are the VM names, not the names appear at the OCP cluster. The OCP nodes gets their hostname from reverse DNS query
+    role: master
+    ip: 192.168.0.10
+    memory: 20000
+    disk_capacity: 100000000000
+    cpu_count: 8
+    cores_per_socket: 1
+    scale_out: "no"
+
+  - vm_name: master02
+    role: master
+    ip: 192.168.0.11
+    memory: 20000
+    disk_capacity: 100000000000
+    cpu_count: 8
+    cores_per_socket: 1
+    scale_out: "no"
+
+  - vm_name: infra01
+    role: master
+    ip: 192.168.0.12
+    memory: 20000
+    disk_capacity: 100000000000
+    cpu_count: 8
+    cores_per_socket: 1
+    scale_out: "no"
+
+  - vm_name: infra02
+    role: infra
+    ip: 192.168.0.13
+    memory: 16000
+    disk_capacity: 100000000000
+    cpu_count: 10
+    cores_per_socket: 1
+    scale_out: "no"
+
+  - vm_name: infra03
+    role: infra
+    ip: 192.168.0.14
+    memory: 16000
+    disk_capacity: 100000000000
+    cpu_count: 10
+    cores_per_socket: 1
+    scale_out: "no"
+
+
+ocpnodes_bms: #put [] if there is no BM server
+ - bm_name: worker1 ### Just a name, no use
+   role: worker
+   ip: 192.168.0.15
+   redfish_baseuri: 10.5.5.1 ## OOB IP for redfish
+   redfish_username: root
+   redfish_password: calvin
+   bm_vendor: dell
+   interfaces:
+     - "NIC.Integrated.1-1-1"
+     - "NIC.Slot.4-1-1"
+   scale_out: "no"
+
+ - bm_name: worker2
+   role: worker
+   ip: 172.21.119.105
+   redfish_baseuri: 10.242.182.179
+   redfish_username: admin
+   redfish_password: admin123
+   bm_vendor: hp
+   interfaces:
+     - "7"
+     - "9"
+   scale_out: "no"    ###  set this to "yes" for scale out the cluster
+
+
+ocp_httpProxy: http://proxy.company.akb:8080
+ocp_httpsProxy: http://proxy.company.akb:8080
+ocp_noProxy: .company.com,.companypreprod.com,company.com
+
+ocp_additionalca: |-
+  
+  -----BEGIN CERTIFICATE-----
+  MIIEczCCA1ugAwIBAgIBADANBgkqhkiG9w0BAQQFAD..AkGA1UEBhMCR0Ix
+  EzARBgNVBAgTClNvbWUtU3RhdGUxFDASBgNVBAoTC0..0EgTHRkMTcwNQYD
+  VQQLEy5DbGFzcyAxIFB1YmxpYyBQcmltYXJ5IENlcn..XRpb24gQXV0aG9y
+  aXR5MRQwEgYDVQQDEwtCZXN0IENBIEx0ZDAeFw0wMD..TUwMTZaFw0wMTAy
+  MDQxOTUwMTZaMIGHMQswCQYDVQQGEwJHQjETMBEGA1..29tZS1TdGF0ZTEU
+  MBIGA1UEChMLQmVzdCBDQSBMdGQxNzA1BgNVBAsTLk..DEgUHVibGljIFBy
+  aW1hcnkgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkxFD..AMTC0Jlc3QgQ0Eg
+  THRkMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCg..Tz2mr7SZiAMfQyu
+  vBjM9OiJjRazXBZ1BjP5CE/Wm/Rr500PRK+Lh9x5eJ../ANBE0sTK0ZsDGM
+  ak2m1g7oruI3dY3VHqIxFTz0Ta1d+NAjwnLe4nOb7/..k05ShhBrJGBKKxb
+  8n104o/5p8HAsZPdzbFMIyNjJzBM2o5y5A13wiLitE..fyYkQzaxCw0Awzl
+  kVHiIyCuaF4wj571pSzkv6sv+4IDMbT/XpCo8L6wTa..sh+etLD6FtTjYbb
+  rvZ8RQM1tlKdoMHg2qxraAV++HNBYmNWs0duEdjUbJ..XI9TtnS4o1Ckj7P
+  OfljiQIDAQABo4HnMIHkMB0GA1UdDgQWBBQ8urMCRL..5AkIp9NJHJw5TCB
+  tAYDVR0jBIGsMIGpgBQ8urMCRLYYMHUKU5AkIp9NJH..aSBijCBhzELMAkG
+  A1UEBhMCR0IxEzARBgNVBAgTClNvbWUtU3RhdGUxFD..AoTC0Jlc3QgQ0Eg
+  THRkMTcwNQYDVQQLEy5DbGFzcyAxIFB1YmxpYyBQcm..ENlcnRpZmljYXRp
+  b24gQXV0aG9yaXR5MRQwEgYDVQQDEwtCZXN0IENBIE..DAMBgNVHRMEBTAD
+  AQH/MA0GCSqGSIb3DQEBBAUAA4IBAQC1uYBcsSncwA..DCsQer772C2ucpX
+  xQUE/C0pWWm6gDkwd5D0DSMDJRqV/weoZ4wC6B73f5..bLhGYHaXJeSD6Kr
+  XcoOwLdSaGmJYslLKZB3ZIDEp0wYTGhgteb6JFiTtn..sf2xdrYfPCiIB7g
+  BMAV7Gzdc4VspS6ljrAhbiiawdBiQlQmsBeFz9JkF4..b3l8BoGN+qMa56Y
+  It8una2gY4l2O//on88r5IWJlm1L0oA8e4fR2yrBHX..adsGeFKkyNrwGi/
+  7vQMfXdGsRrXNGRGnX+vWDZ3/zWI0joDtCkNnqEpVn..HoX
+  -----END CERTIFICATE-----
+
+ocp_sshPublicKey: |-
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAQQCo9+BpMRYQ/dL3DS2CyJxRF+j6ctbT3/Qp84+KeFhnii7NT7fELilKUSnxS30WAvQCCo2yU1orfgqr41mM70MB phpseclib-generated-key

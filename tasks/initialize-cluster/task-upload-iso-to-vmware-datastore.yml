@@ -1,0 +1,14 @@
+---
+
+- name: Upload ISO to VMware Datastore
+  community.vmware.vsphere_copy:
+    datastore: "V6DC_C26DS0011_T0_HTST1_OCPTestISO"
+    datacenter: "ABMDC02-TEST-OSCP"
+    validate_certs: false
+    src: /tmp/{{ iso_name }}
+    path: "iso/{{ iso_name }}"  # Specify your datastore and folder
+
+
+
+#- name: curl upload
+#  shell: curl -vv --insecure --upload-file /tmp/47m7s.iso -u p66686@aknet.akb:'jGxa8(3Wr9i' "https://vcabmtest.aknet.akb/folder/iso/test.iso?dcPath=ABMDC02-TEST-OSCP&dsName=V6DC_C26DS0011_T0_HTST1_OCPTestISO"
