@@ -1,7 +1,0 @@
-- name: vcenter connection test
-  hosts: localhost  # Specify the target host from your Ansible inventory
-  gather_facts: no
-  tasks:
-
-    - name: test
-      shell: curl -v telnet://xvcnankp01.aknet.akb:443

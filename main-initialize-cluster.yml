@@ -55,10 +55,6 @@
       include_tasks: tasks/initialize-cluster/task-upload-iso-to-vmware-datastore.yml
       when: vm_hosts | length > 0
 
-#    - name: upload-iso-to-webserver
-#      shell: curl -u username:password -F path={{ iso_name }} -X POST -F file=@/tmp/{{ iso_name }} {{ webserver_upload_url }} -k
-#      when: bm_hosts | length > 0
-
 
     - name: upload-iso-to-webserver
       include_tasks: tasks/generic-tasks/tasks-upload-iso-to-webserver.yml

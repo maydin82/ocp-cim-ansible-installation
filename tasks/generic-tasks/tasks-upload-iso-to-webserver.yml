@@ -6,6 +6,8 @@
     set_fact:
       retry_count: "{{ 0 if retry_count is undefined else retry_count | int + 1 }}"
 
+###  TODOFORME   - make it better
+
   - name: Upload the ISO file to the web server
     shell: curl --fail -u username:password -F path={{ iso_name }} -X POST -F file=@/tmp/{{ iso_name }} {{ webserver_upload_url }} -k
 
