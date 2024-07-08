@@ -1,6 +1,6 @@
 Change "changeme" to the OCP cluster name and fill the requested variables; vars/vars-create-changeme-from-acm.yml
 
-ocp_cluster variable should be provided as extra variable and the value should be OCP cluster name.
+ocp_cluster variable should be provided as an xtra variable and the value should be set to the OCP cluster name.
 
 ACM OCP credential and Vcenter credentails should be provided as AAP Credentails
 
