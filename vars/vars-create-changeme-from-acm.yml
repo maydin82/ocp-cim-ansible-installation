@@ -28,7 +28,7 @@ ocp_ntpservers: #NTP server IPs for OCP cluster
 
 ocp_clusterCIDR: 10.128.0.0/14   ### OCP cluster network CIDR (add hostprefix as variable TODOFORME)
 ocp_serviceCIDR: 172.30.0.0/16   ### OCP service network CIDR 
-
+ocp_HostPrefix: 22
 numberof_worker: 4 ### Total number of workers, infra nodes included
 
 ocpnodes_vms:
