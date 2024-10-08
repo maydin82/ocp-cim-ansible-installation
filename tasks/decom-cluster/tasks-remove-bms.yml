@@ -1,0 +1,44 @@
+- name: Get Virtual Media information
+  community.general.redfish_info:
+    category: Manager
+    command: GetVirtualMedia
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+  register: virtual_media_info
+
+- name: print virtual media info
+  ansible.builtin.debug:
+    msg: "{{ virtual_media_info }}"
+
+
+- name: Extract Image URL
+  set_fact:
+    existing_image_url: "{{ virtual_media_info.redfish_facts.virtual_media.entries[0][1] | selectattr('ConnectedVia', 'ne', 'NotConnected') | map(attribute='Image') | first }}"
+  ignore_errors: true
+
+
+- name: print ejected virtual media
+  ansible.builtin.debug:
+    msg: "{{ existing_image_url }}"
+  when: existing_image_url is defined
+
+- name: Eject virtual media
+  community.general.redfish_command:
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+    category: "Manager"
+    command: "VirtualMediaEject"
+    virtual_media:
+      image_url: "{{ existing_image_url }}"
+  when: existing_image_url is defined
+
+
+- name:  power off forcefully
+  community.general.redfish_command:
+    category: Systems
+    command: PowerForceOff
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"

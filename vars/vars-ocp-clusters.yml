@@ -1,0 +1,28 @@
+ocpcluster:
+  ##TODO cluster_name##:
+    api_key: ## TODO API Key here ##
+    host: https://api.###TODO cluster_name##.##TODO cluster_domain##:6443
+    cluster_type: new
+
+  ##TODO cluster_name##:
+    api_key: ## TODO API Key here ##
+    host: https://api.###TODO cluster_name##.##TODO cluster_domain##:6443
+    cluster_type: old
+
+
+live_iso_images:
+  4.12.0:
+    checksum: md5:2a1a1da595d79a27461b63951d3802d6
+    iso_label: rhcos-412.86.202212081411-0
+  4.12.30:
+    checksum: md5:317327973fbc33bebdd66820efb97c8d
+    iso_label: rhcos-412.86.202308081039-0
+  4.14.0:
+    checksum: md5:218278fbe0e03a36aa1d8350ef4c6ecb
+    iso_label: rhcos-414.92.202310170514-0
+  4.14.14:
+    checksum: md5:de04b411834057be0c5e6e149154e020
+    iso_label: rhcos-414.92.202402130420-0
+
+ssh_private_key_for_tfs_repo: |
+  ##TODO## ## GIT private key 

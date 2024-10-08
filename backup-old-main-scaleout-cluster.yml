@@ -1,0 +1,101 @@
+
+- name: Scale out OCP cluster
+  hosts: localhost  # Specify the target host from your Ansible inventory
+  gather_facts: yes
+  vars_files:
+    - vars-create-{{ ocp_cluster }}-from-acm.yml
+    - vars-ocp-clusters.yml
+  tasks:
+  - name: Scale out OCP cluster
+    block: 
+    - name: Sleep for 1 min
+      shell: sleep 60
+
+    - name: Get InfraEnv
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: InfraEnv
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: InfraEnv
+ 
+    - name: Extract isoDownloadURL from the Kubernetes object
+      set_fact:
+        iso_location_minimal: "{{ InfraEnv.resources[0].status.isoDownloadURL }}"
+ 
+    - name: Extract isoDownloadURL from the Kubernetes object
+      set_fact:
+        iso_location: "{{ iso_location_minimal | replace('minimal.iso', 'full.iso') }}"
+
+    - name: Download ISO from URL
+      get_url:
+        url: "{{ iso_location  }}"  # URL to the ISO file
+        dest: /tmp/{{ iso_name }}
+        timeout: 720 #timeout hatası aldığı için arttırdım
+        validate_certs: false
+        force: true
+      register: download_result
+      until: download_result is succeeded
+      retries: 5
+      delay: 10
+      vars:
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+ 
+    - name: Find hosts with type VM
+      set_fact:
+        vm_hosts: "{{ ocpnodes_vms | selectattr('scale_out', 'equalto', 'yes') | list }}"
+
+
+
+    - name: Find hosts with type BM
+      set_fact:
+        bm_hosts: "{{ ocpnodes_bms | selectattr('scale_out', 'equalto', 'yes') | list }}"
+
+
+    - name: upload-iso-to-webserver
+      include_tasks: tasks/generic-tasks/tasks-upload-iso-to-webserver.yml
+      when: bm_hosts | length > 0
+      vars: 
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+    - name: upload the iso file to VMware DS
+      include_tasks: tasks/initialize-cluster/task-upload-iso-to-vmware-datastore.yml
+      when: vm_hosts | length > 0
+      vars: 
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+  
+    - name: attach ISO to infra VMs and power on
+      include_tasks: tasks/initialize-cluster/task-attach-cdrom-vm.yml
+      when:
+        - item.role == 'infra'
+        - ocpnodes_vms is defined
+      loop: "{{ vm_hosts }}"
+      vars:      
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+    - name: Approve infra nodes
+      include_tasks: tasks/scale-out-cluster/task-infra-approve-hosts.yml
+
+
+    - name: attach ISO to worker BMs and power on
+      include_tasks: tasks/initialize-cluster/task-attach-cdrom-bm.yml
+      when:
+        - item.role == 'worker'
+        - ocpnodes_bms is defined
+      loop: "{{ bm_hosts }}"
+      vars:      
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+ 
+
+    - name: attach ISO to worker VMs and power on
+      include_tasks: tasks/initialize-cluster/task-attach-cdrom-vm.yml
+      when:
+        - item.role == 'worker'
+        - ocpnodes_vms is defined
+      loop: "{{ vm_hosts }}"
+      vars:      
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+ 
+    - name: Approve worker nodes
+      include_tasks: tasks/scale-out-cluster/task-worker-approve-hosts.yml
+
+    when: ocpcluster[ocp_cluster].cluster_type  == "new"

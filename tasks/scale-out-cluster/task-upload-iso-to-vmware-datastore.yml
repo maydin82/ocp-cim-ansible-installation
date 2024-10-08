@@ -1,0 +1,12 @@
+---
+
+- name: Upload ISO to VMware Datastore
+  community.vmware.vsphere_copy:
+    datastore: "{{ datastore_name }}"
+    datacenter: "{{ datacenter_name }}"
+    validate_certs: false
+    src: /tmp/{{ iso_name }}
+    path: "iso/{{ iso_name }}"  # Specify your datastore and folder
+
+
+

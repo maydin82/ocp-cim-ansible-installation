@@ -1,0 +1,25 @@
+---
+##########
+- name: Create customized ISO file and attach to the BMs
+  hosts: localhost
+  become: false
+  gather_facts: false
+  vars_files:
+    - add-bm-vars.yml
+    - vars-ocp-clusters.yml
+  tasks:
+  - name: Create customized ISO file and attach to the BMs
+    block:
+      - name: Create customized ISO
+        ansible.builtin.include_tasks: add-bm-with-ignition/create-customized-iso.yaml
+
+      - name: Upload customized iso to {{ webserver_url }}
+        include_tasks: add-bm-with-ignition/tasks-upload-iso-to-webserver.yml
+
+      - name: Attach cdrom to bm and power on
+        ansible.builtin.include_tasks: add-bm-with-ignition/attach-cdrom-bm.yml
+
+      - name: Approve CSRs
+        include_tasks: tasks/task-approve-csr.yml
+
+    when: ocpcluster[ocp_cluster].cluster_type  == "old"

@@ -1,0 +1,67 @@
+#    - name: Create the download url (x86_64)
+#      set_fact:
+#        dl_url: 'https://{{ webserver_url }}/{{ iso_name }}'
+#        #dl_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.{{ ocp_version.split(".")[1] }}/latest/rhcos-live.x86_64.iso'
+
+
+    - name: Get the original ISO
+      get_url:
+        url: 'https://{{ webserver_url }}/{{ iso_name }}'
+        dest: /tmp
+        validate_certs: false
+        checksum: "{{ iso_md5_checksum }}"
+      register: download_result
+      until: download_result is succeeded
+      retries: 5
+      delay: 10
+
+
+  
+    - name: Get checksum
+      ansible.builtin.stat:
+        path: /tmp/{{ iso_name }}
+        checksum_algorithm: md5
+      register: stat
+
+    - name: check iso checksum
+      debug:
+        var: stat
+
+    - name: Relace the isolinux.cfg file (x86_64)
+      template:
+        src: "isolinux.cfg-single.j2"
+        dest: /tmp/isolinux.cfg
+        owner: root
+        group: root
+        mode: '0444'
+
+    - name: Relace the grub.cfg file (x86_64)
+      template:
+        src: "grub.cfg-single.j2"
+        dest: /tmp/grub.cfg
+        owner: root
+        group: root
+        mode: '0444'
+
+    - name: check new files
+      shell: cat /tmp/isolinux.cfg && cat /tmp/grub.cfg
+
+    - name: "Delete-Customize ISO file"
+      community.general.iso_customize:
+        src_iso: "/tmp/{{ iso_name }}"
+        dest_iso: "/tmp/temp-{{ iso_name }}"
+        delete_files:
+          - "/isolinux/isolinux.cfg"
+          - "/EFI/redhat/grub.cfg"
+
+    - name: "Customize ISO file"
+      community.general.iso_customize:
+        src_iso: "/tmp/temp-{{ iso_name }}"
+        dest_iso: "/tmp/customized-{{ iso_name }}"
+        add_files:
+          - src_file: "/tmp/grub.cfg"
+            dest_file: "/EFI/redhat/grub.cfg"
+          - src_file: "/tmp/isolinux.cfg"
+            dest_file: "/isolinux/isolinux.cfg"
+
+

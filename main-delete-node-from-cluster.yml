@@ -1,0 +1,61 @@
+- name: Drain and delete a node from a cluster
+  hosts: localhost  # Specify the target host from your Ansible inventory
+  gather_facts: no
+  tasks:
+  - include_vars: vars-ocp-clusters.yml 
+
+  - name: Drain node
+    kubernetes.core.k8s_drain:
+      api_key: "{{ ocpcluster[ocp_cluster_node_deleted_from].api_key }}"
+      host: "{{ ocpcluster[ocp_cluster_node_deleted_from].host }}"
+      validate_certs: false
+      state: drain
+      name: "{{ node_name_to_be_deleted }}"
+      delete_options:
+        delete_emptydir_data: true
+        ignore_daemonsets: true
+    register: drain_result
+
+  - name: Delete node
+    kubernetes.core.k8s:
+      api_key: "{{ ocpcluster[ocp_cluster_node_deleted_from].api_key }}"
+      host: "{{ ocpcluster[ocp_cluster_node_deleted_from].host }}"
+      state: absent
+      api_version: v1
+      kind: Node
+      name: "{{ node_name_to_be_deleted }}"
+      validate_certs: false
+    when: drain_result.changed
+
+  - name: Remove Agent and NMstateconfig if the source cluster is installed by ACM
+    block:
+    - name: Get  related agents
+      kubernetes.core.k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: Agent
+        namespace: "{{ ocp_cluster_node_deleted_from }}-deploy"
+      register: all_agents
+
+    - name: Find the agent with the specific hostname
+      set_fact:
+        agent_name: "{{ all_agents.resources | selectattr('status.inventory.hostname', 'equalto', node_name_to_be_deleted) | map(attribute='metadata.name') | first }}"
+
+    - name: Delete the related agent
+      kubernetes.core.k8s:
+        state: absent
+        api_version: agent-install.openshift.io/v1beta1
+        kind: Agent
+        name: "{{ agent_name }}"
+        namespace: "{{ ocp_cluster_node_deleted_from }}-deploy"
+
+    - name: Delete the related NMstateconfig
+      kubernetes.core.k8s:
+        state: absent
+        api_version: agent-install.openshift.io/v1beta1
+        kind: NMStateConfig
+        name: "{{ node_name_to_be_deleted | split('.') | first }}"
+        namespace: "{{ ocp_cluster_node_deleted_from }}-deploy"
+
+
+    when: ocpcluster[ocp_cluster_node_deleted_from].cluster_type == 'new'
+

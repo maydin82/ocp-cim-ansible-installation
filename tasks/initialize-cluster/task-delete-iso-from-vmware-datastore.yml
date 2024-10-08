@@ -1,0 +1,9 @@
+---
+
+- name: Delete ISO from VMware Datastore
+  community.vmware.vsphere_file:
+    datastore: "{{ datastore_name }}"
+    datacenter: "{{ datacenter_name }}"
+    path: iso/{{ ocp_cluster }}.iso  # Specify your datastore and folder
+    state: absent
+  ignore_errors: true

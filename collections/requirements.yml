@@ -1,0 +1,6 @@
+collections:
+  #- name: community.okd
+  #- name: vmware.vmware_rest
+  - name: community.vmware
+  - name: community.general
+  - name: kubernetes.core

@@ -1,0 +1,64 @@
+---
+##########
+- name: Create ISO file under tmp dir
+  hosts: all
+  become: false
+  gather_facts: false
+  tasks:
+#    - name: Create the download url (x86_64)
+#      set_fact:
+#        dl_url: 'https://{{ webserver_url }}/{{ iso_name }}'
+
+#    - name: Get the original ISO
+#      get_url:
+#        url: "{{ dl_url }}"
+#        dest: /tmp
+#        validate_certs: false
+
+
+#    - name: Relace the isolinux.cfg file (x86_64)
+#      template:
+#        src: "isolinux.cfg-single.j2"
+#        dest: /tmp/isolinux.cfg
+#        owner: root
+#        group: root
+#        mode: '0444'
+
+#    - name: Relace the grub.cfg file (x86_64)
+#      template:
+#        src: "grub.cfg-single.j2"
+#       dest: /tmp/grub.cfg
+#       owner: root
+#        group: root
+#        mode: '0444'
+
+#    - name: check new files
+#      shell: cat /tmp/isolinux.cfg && cat /tmp/grub.cfg
+
+#    - name: "Delete-Customize ISO file"
+#      community.general.iso_customize:
+#        src_iso: "/tmp/{{ iso_name }}"
+#        dest_iso: "/tmp/temp-{{ iso_name }}"
+#        delete_files:
+#          - "/isolinux/isolinux.cfg"
+#         - "/EFI/redhat/grub.cfg"
+
+#    - name: "Customize ISO file"
+#      community.general.iso_customize:
+#        src_iso: "/tmp/temp-{{ iso_name }}"
+#        dest_iso: "/tmp/customized-{{ iso_name }}"
+#        add_files:
+#          - src_file: "/tmp/grub.cfg"
+#            dest_file: "/EFI/redhat/grub.cfg"
+#          - src_file: "/tmp/isolinux.cfg"
+#            dest_file: "/isolinux/isolinux.cfg"
+#
+#
+#    - name: Upload customized iso to {{ webserver_url }} 
+#      shell: "curl -k -u username:password -F path=customized-{{ iso_name }} -X POST -F file=@/tmp/customized-{{ iso_name }} https://{{ webserver_url }}/upload"
+
+    - name: Create customized ISO
+      ansible.builtin.include_tasks: test-create-customized-iso.yaml
+
+#    - name: Attach cdrom to bm and power on
+#      ansible.builtin.include_tasks: test-attach-cdrom-bm.yml

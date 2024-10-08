@@ -1,0 +1,98 @@
+#ansible_python_interpreter: /usr/bin/python3
+
+datacenter_name: "SAMPLEDC"  ##TODO VMware DC name
+cluster_name: "SAMPLECLUSTER" ##TODO VMware CLUSTER name
+datastore_name: "SAMPLEDS" ##TODO VMware DS name  
+folder_name: "SAMPLEFOLDER" ## TODO VMware folder name
+network_name: "SAMPLENETWORK"  ## TODO VMware network name
+ocp_cluster_vlan_id: 116  ## TODO vlan ID if BM network is in trunk mode
+
+iso_name: "{{ ocp_cluster }}.iso"
+scale_out_iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+webserver_url: https://webserver.company.com 
+webserver_upload_url: https://webserver.company.com/upload 
+
+ocp_clusterversion: 4.14.9  ## Set it to the OCP cluster version 
+
+ocp_domain: company.com 
+ocp_dnsservers:  
+  - 10.10.10.1
+  - 10.10.10.2
+  - 10.10.10.3
+ocp_dnssearchdomains:
+  - company.com 
+
+ocp_defaultgw: 192.168.1.1
+ocp_subnetmask: 24
+
+ocp_ntpservers: #zone'a gore degistirilecek
+  - 10.10.10.5 
+
+ocp_clusterCIDR: 10.128.0.0/14
+ocp_serviceCIDR: 172.30.0.0/16
+
+numberof_worker: 2
+
+ocpnodes_vms:
+  - vm_name: master01 ## this will be the vm name on vmware, not the ocp node name
+    role: master
+    ip: 192.168.1.2
+    memory: 20000
+    disk_capacity: 100000000000
+    cpu_count: 8
+    cores_per_socket: 1
+  - vm_name: master02
+    role: master
+    ip: 192.168.1.3
+    memory: 20000
+    disk_capacity: 100000000000
+    cpu_count: 8
+    cores_per_socket: 1
+  - vm_name: master03
+    role: master
+    ip: 192.168.1.4
+    memory: 20000
+    disk_capacity: 100000000000
+    cpu_count: 8
+    cores_per_socket: 1
+  - vm_name: worker01
+    role: infra
+    ip: 192.168.1.5
+    memory: 16000
+    disk_capacity: 100000000000
+    cpu_count: 10
+    cores_per_socket: 1
+  - vm_name: worker02
+    role: infra
+    ip: 192.168.1.6
+    memory: 16000
+    disk_capacity: 100000000000
+    cpu_count: 10
+    cores_per_socket: 1
+
+
+ocpnodes_bms: []
+# - bm_name: workerbm01
+#   role: worker
+#   ip: 192.168.1.7
+#   redfish_baseuri: 4.4.4.4
+#   redfish_username: root
+#   redfish_password: calvin
+#   bm_vendor: dell
+#   mac_addresses:
+#     eno12399: "b4:83:51:0b:cd:38"
+#     ens4f0: "c4:cb:e1:a6:8f:f1"
+#   scale_out: "yes"
+
+
+ocp_httpProxy: http://proxy.company.com:8080
+ocp_httpsProxy: http://proxy.company.com:8080
+ocp_noProxy: ##TODO ##
+
+
+
+ocp_additionalca: |-
+  ## TODO any additional CAs here##
+
+ocp_sshPublicKey: |-
+  ## core user public key ##

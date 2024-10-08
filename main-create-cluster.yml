@@ -1,0 +1,62 @@
+- name: Create cluster on ACM with HELM
+  hosts: localhost  # Specify the target host from your Ansible inventory
+  gather_facts: no
+  vars_files:
+    - vars-create-{{ ocp_cluster }}-from-acm.yml
+    - vars-ocp-clusters.yml
+  tasks:
+  - name: Create cluster on ACM with HELM
+    block:
+    - name: Get MAC addresses of VMs 
+      block:
+        - name: Create a var file
+          ansible.builtin.lineinfile:
+            path: ./macaddress_list.yml
+            line: "vmmacs_variables:"
+            create: yes
+
+        - name: Check the Mac addresses of VMs
+          include_tasks: tasks/create-cluster-on-acm/task-check-vm-mac.yaml
+          loop: "{{ ocpnodes_vms }}"
+    
+      when: 
+        - ocpnodes_vms is defined   
+ 
+#    - name: Get MAC addresses of BMs
+#      block:
+#        - name: Create a var file
+#          ansible.builtin.lineinfile:
+#            path: ./macaddress_list.yml
+#            line: "bmmacs_variables:"
+#            create: yes
+ 
+#        - name: Check the Mac addresses of BMs
+#          include_tasks: tasks/create-cluster-on-acm/task-check-bm-mac.yaml
+#          loop: "{{ ocpnodes_bms }}"
+#      when:
+#        - ocpnodes_bms is defined
+    
+
+    - name: Get mac list
+      shell: cat ./macaddress_list.yml
+
+    - name: Load vars from specific file
+      include_vars: macaddress_list.yml
+
+    - name: Generate YAML file
+      template:
+        src: vars-helm.j2
+        dest: vars-{{ ocp_cluster }}.yaml
+
+    - name: Cat new var file
+      shell: cat ./vars-{{ ocp_cluster }}.yaml
+
+    - name: Check Helm list
+      shell: helm list --kube-insecure-skip-tls-verify --namespace test-ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }} | grep {{ ocp_cluster }}
+      register: helm_status
+      ignore_errors: true      
+
+    - name: Install helm chart to ACM
+      shell: helm upgrade --install {{ ocp_cluster }} ./helm-create-cluster/ -f ./vars-{{ ocp_cluster }}.yaml --kube-insecure-skip-tls-verify --namespace test-ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }}
+
+    when: ocpcluster[ocp_cluster].cluster_type  == "new"

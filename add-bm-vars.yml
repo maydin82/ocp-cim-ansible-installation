@@ -1,0 +1,43 @@
+---
+
+webserver_url: ##webserver upload url
+ignition_url: ## ignition files url
+boot_timeout: 10
+
+
+#ocp_version: 4.12.30
+iso_name: rhcos-{{ ocp_version }}-x86_64-live.x86_64.iso
+#rhcos_bios: rhcos-{{ ocp_version }}-x86_64-metal.x86_64.raw.gz
+server: "{{ hostname }}"
+#domain: testdomain
+
+
+install_drive: sda
+
+#vlan: 1205 
+
+#machine_nics:
+# - eno12399
+# - ens4f0
+
+#machine_ip: 172.31.196.230
+#machine_net_gw: 172.31.196.1
+#machine_net_mask: 255.255.255.0
+#hostname: oldworker01
+#base_dns_name: company.com
+#dns:
+# - 10.10.10.1
+# - 10.10.10.2
+# - 10.10.10.3
+
+
+iso_location: "https://{{ webserver_url }}/customized-{{ iso_name }}"
+#redfish_username: root
+#redfish_password: calvin
+#redfish_baseuri: 10.242.192.170
+
+iso_md5_checksum: "{{ live_iso_images[ocp_version].checksum }}"
+
+#iso_label: rhcos-414.92.202402130420-0  #isoinfo -d -i rhcos-live.x86_64.iso | sed -n 's/Volume id: //p'
+iso_label: "{{ live_iso_images[ocp_version].iso_label }}"
+

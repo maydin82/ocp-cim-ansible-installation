@@ -1,0 +1,117 @@
+
+- name:  power off forcefully
+  community.general.redfish_command:
+    category: Systems
+    command: PowerForceOff
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+
+
+- name: Get Virtual Media information
+  community.general.redfish_info:
+    category: Manager
+    command: GetVirtualMedia
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+  register: virtual_media_info
+
+- name: print virtual media info
+  ansible.builtin.debug:
+    msg: "{{ virtual_media_info }}"
+
+
+- name: Extract Image URL
+  set_fact:
+    existing_image_url: "{{ virtual_media_info.redfish_facts.virtual_media.entries[0][1] | selectattr('ConnectedVia', 'ne', 'NotConnected') | map(attribute='Image') | first }}"
+  ignore_errors: true
+
+
+- name: print ejected virtual media
+  ansible.builtin.debug:
+    msg: "{{ existing_image_url }}"
+  when: existing_image_url is defined
+
+- name: Eject virtual media
+  community.general.redfish_command:
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+    category: "Manager"
+    command: "VirtualMediaEject"
+    virtual_media:
+      image_url: "{{ existing_image_url }}"
+  when: existing_image_url is defined
+
+- name: Get default inventory information
+  community.general.redfish_info:
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+  register: inventory_info
+
+- name: Print fetched information
+  ansible.builtin.debug:
+    msg: "{{ inventory_info.redfish_facts | to_nice_json }}"
+
+
+
+- name: Insert ISO image as virtual media device
+  community.general.redfish_command:
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+    category: "Manager"
+    command: "VirtualMediaInsert"
+    virtual_media:
+      image_url: "{{ webserver_url }}/{{ iso_name }}"
+      media_types:
+        - CD
+        - DVD
+  register: insert_media_result
+  until: insert_media_result is succeeded
+  retries: 5
+  delay: 10
+
+
+
+- name: set iDRAC attribute for one-time boot from virtual CD
+  community.general.idrac_redfish_config:
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+    category: "Manager"
+    command: "SetManagerAttributes"
+    manager_attributes:
+      ServerBoot.1.BootOnce: "Enabled"
+      ServerBoot.1.FirstBootDevice: "VCD-DVD"
+  when: 
+    - insert_media_result.changed
+    - inventory_info.redfish_facts.system.entries[0][1].Manufacturer == "Dell Inc."
+  register: idrac_onetime_boot
+
+
+- name: Set one-time boot device to Cd
+  community.general.redfish_command:
+    category: Systems
+    command: SetOneTimeBoot
+    bootdevice: Cd
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+  register: hp_onetimeboot
+  when:
+    - insert_media_result.changed
+    - inventory_info.redfish_facts.system.entries[0][1].Manufacturer == "HPE"
+
+
+
+- name:  power on 
+  community.general.redfish_command:
+    category: Systems
+    command: PowerOn
+    baseuri: "{{ item.redfish_baseuri }}"
+    username: "{{ item.redfish_username }}"
+    password: "{{ item.redfish_password }}"
+#  when: idrac_onetime_boot.changed or hp_onetimeboot.changed

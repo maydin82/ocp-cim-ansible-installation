@@ -1,0 +1,18 @@
+    - name: Look up the VM
+      register: search_result
+      vmware.vmware_rest.vcenter_vm_info:
+        filter_names: "{{ item.vm_name }}"
+    - debug:
+        var: search_result
+
+    - name: Collect information about each VM
+      vmware.vmware_rest.vcenter_vm_info:
+        vm: '{{ item.vm }}'
+      loop: "{{ search_result.value }}"
+      register: my_vms
+
+    - name: Create a var file
+      ansible.builtin.lineinfile:
+        path: ./macaddress_list.yml
+        line: "  {{ item.value.name }}: {{ item.value.nics | dict2items | map(attribute='value.mac_address') | first }}"
+      loop: "{{ my_vms.results }}"

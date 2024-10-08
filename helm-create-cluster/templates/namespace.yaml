@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    cluster-name: {{ .Values.clusterName }}
+  name: {{ .Values.namespace_name }}
+

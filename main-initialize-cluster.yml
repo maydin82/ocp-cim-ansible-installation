@@ -1,0 +1,110 @@
+- name: Initialize OCP cluster
+  hosts: localhost  # Specify the target host from your Ansible inventory
+  gather_facts: yes
+#  collections:
+#    - community.vmware
+#    - community.general
+  vars_files:
+    - vars-create-{{ ocp_cluster }}-from-acm.yml
+  tasks:
+    - name: Get InfraEnv
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: InfraEnv
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: InfraEnv
+      until: InfraEnv.resources[0].status.isoDownloadURL is defined
+      retries: 30
+      delay: 10
+
+
+    - name: Extract isoDownloadURL from the Kubernetes object
+      set_fact:
+        iso_location_minimal: "{{ InfraEnv.resources[0].status.isoDownloadURL }}"
+#        iso_location: "{{ InfraEnv.resources[0].status.isoDownloadURL }}"
+
+    - name: Extract isoDownloadURL from the Kubernetes object
+      set_fact:
+        iso_location: "{{ iso_location_minimal | replace('minimal.iso', 'full.iso') }}"
+
+    - name: Downlad ISO from URL
+      include_tasks: tasks/initialize-cluster/task-download-iso-from-url.yml
+
+
+#    - name: Download ISO from URL
+#      get_url:
+#        url: "{{ iso_location  }}"  # URL to the ISO file
+#        dest: /tmp/{{ iso_name }}
+#        timeout: 360
+#        validate_certs: false
+#        force: true
+
+    - name: check iso
+      shell: ls /tmp/
+
+    - name: Find hosts with type VM
+      set_fact:
+        vm_hosts: "{{ ocpnodes_vms }}"
+
+    - name: Find hosts with type BM
+      set_fact:
+        bm_hosts: "{{ ocpnodes_bms }}"
+
+    - name: Remove the existing iso file from DS
+      include_tasks: tasks/initialize-cluster/task-delete-iso-from-vmware-datastore.yml
+      when: vm_hosts | length > 0
+
+    - name: upload the iso file to VMware DS
+      include_tasks: tasks/initialize-cluster/task-upload-iso-to-vmware-datastore.yml
+      when: vm_hosts | length > 0
+
+#    - name: upload-iso-to-webserver
+#      shell: curl -u username:password -F path={{ iso_name }} -X POST -F file=@/tmp/{{ iso_name }} {{ webserver_upload_url }} -k
+#      when: bm_hosts | length > 0
+
+
+    - name: upload-iso-to-webserver
+      include_tasks: tasks/generic-tasks/tasks-upload-iso-to-webserver.yml
+      when: bm_hosts | length > 0
+
+
+    - name: attach ISO to master VMs and power on 
+      include_tasks: tasks/initialize-cluster/task-attach-cdrom-vm.yml
+      when: 
+        - item.role == 'master'
+      loop: "{{ ocpnodes_vms }}"
+
+#    - name: attach ISO to master BMs and power on 
+#      include_tasks: tasks/initialize-cluster/task-attach-cdrom-bm.yml
+#      when:
+#        - item.role == 'master'
+#        - ocpnodes_bms is defined
+#      loop: "{{ ocpnodes_bms }}"
+      
+    - name: Approve Master nodes
+      include_tasks: tasks/initialize-cluster/task-master-approve-hosts.yml
+
+    - name: attach ISO to infra VMs and power on
+      include_tasks: tasks/initialize-cluster/task-attach-cdrom-vm.yml
+      when:
+        - item.role == 'infra'
+      loop: "{{ ocpnodes_vms }}"
+
+    - name: Approve infra nodes
+      include_tasks: tasks/initialize-cluster/task-infra-approve-hosts.yml
+
+    - name: attach ISO to worker VMs and power on
+      include_tasks: tasks/initialize-cluster/task-attach-cdrom-vm.yml
+      when: 
+        - item.role == 'worker'
+      loop: "{{ ocpnodes_vms }}"
+
+    - name: attach ISO to worker BMs and power on
+      include_tasks: tasks/initialize-cluster/task-attach-cdrom-bm.yml
+      when:
+        - item.role == 'worker'
+        - ocpnodes_bms is defined
+      loop: "{{ ocpnodes_bms }}"
+
+    - name: Approve worker nodes
+      include_tasks: tasks/initialize-cluster/task-worker-approve-hosts.yml

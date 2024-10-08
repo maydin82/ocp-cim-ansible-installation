@@ -1,0 +1,42 @@
+  - name: Download ISO from URL
+    block:
+  
+    - name: Increment the retry count
+      set_fact:
+        retry_count: "{{ 0 if retry_count is undefined else retry_count | int + 1 }}"
+
+
+    - name: Download ISO from URL
+      get_url:
+        url: "{{ iso_location  }}" # URL to the ISO file
+        dest: /tmp/{{ iso_name }}
+        timeout: 720 #timeout hatası aldığı için arttırdım
+        validate_certs: false
+        force: true
+      register: download_result
+      until: download_result is succeeded
+      retries: 5
+      delay: 10
+
+
+    - name: Extract number using regex
+      set_fact:
+        extracted_number: "{{ download_result.msg | regex_search('(?<=\\()[0-9]+') }}"
+
+    - name: Compare if size match
+      assert:
+        that:
+          - (download_result.size | int) == (extracted_number | int)
+        fail_msg: "The downloaded size is not true! File upload might have been corrupted."
+        success_msg: "The downloaded size is OK. File uploaded successfully."
+
+
+    rescue:
+      - fail:
+          msg: Maximum retries of grouped tasks reached
+        when: retry_count | int == 5
+
+      - name: Sleep for 1 min before re-check web server
+        shell: sleep 20
+      
+      - include_tasks: tasks-download-iso-from-url.yml

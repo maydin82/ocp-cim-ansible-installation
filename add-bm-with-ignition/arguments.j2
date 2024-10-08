@@ -1,0 +1,17 @@
+random.trust_cpu=on {# -#}
+rd.luks.options=discard {# -#}
+coreos.liveiso="{{ iso_label }}" {# -#}
+ignition.firstboot {# -#}
+ignition.platform.id=metal {# -#}
+rd.neednet=1 {# -#}
+coreos.inst.install_dev=/dev/{{ install_drive }} {# -#}
+coreos.inst.ignition_url=http://{{ ignition_url }}/{{ ocp_cluster }}-worker.ign {# -#}
+coreos.inst.insecure {# -#}
+ip=bond0:none {# -#}
+ip={{ machine_ip }}::{{ machine_net_gw }}:{{ machine_net_mask }}:{{ hostname }}:bond0.{{ vlan }}:none {# -#}
+{% set interfaces_list = machine_nics.split('\n') %}
+{% set eth_interfaces = interfaces_list | map('split', ';') | map('first') %}
+{% set dns_list = dns.split('\n') %}
+{% for myns in dns_list %}
+nameserver={{ myns }} {% endfor %} bond=bond0:{{ eth_interfaces | join(',') }}:mode=802.3ad,lacp_rate=0,miimon=100 vlan=bond0.{{ vlan }}:bond0
+

@@ -1,0 +1,274 @@
+- name: Create cluster on ACM with HELM
+  hosts: localhost  # Specify the target host from your Ansible inventory
+  gather_facts: yes
+  vars_files:
+    - vars-scale-out.yaml
+    - vars-ocp-clusters.yml
+  vars:
+    repo_url: ##TODO git repo here##
+    repo_dest: "/tmp/repo"   
+  tasks:
+
+  - name: Scale out OCP cluster for BM workers
+    block: 
+    - name: Get  existing agents
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: Agent
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: current_all_agents
+
+    - name: Create a new var for networking
+      set_fact: 
+        ip_subnet: "{{ machine_ip }}/{{ machine_net_mask }}"
+ 
+
+    - name: Generate YAML file
+      template:
+        src: nmstateconfig_bm.j2
+        dest: nmstateconfig.yml
+
+    - name: Create nmstateconfig
+      kubernetes.core.k8s:
+        state: present
+        src: nmstateconfig.yml
+
+    - name: Sleep for 1 min
+      shell: sleep 60
+
+    - name: Get InfraEnv
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: InfraEnv
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: InfraEnv
+ 
+    - name: Extract isoDownloadURL from the Kubernetes object
+      set_fact:
+        iso_location_minimal: "{{ InfraEnv.resources[0].status.isoDownloadURL }}"
+#        iso_location: "{{ InfraEnv.resources[0].status.isoDownloadURL }}"
+ 
+    - name: Replace minimal.iso to full.iso
+      set_fact:
+        iso_location: "{{ iso_location_minimal | replace('minimal.iso', 'full.iso') }}"
+
+    - name: Download ISO from URL
+      include_tasks: tasks/scale-out-cluster/task-download-iso-from-url.yml 
+
+#    - name: Download ISO from URL
+#      get_url:
+#        url: "{{ iso_location  }}"  # URL to the ISO file
+#        dest: /tmp/{{ iso_name }}
+#        timeout: 720 #timeout hatası aldığı için arttırdım
+#        validate_certs: false
+#        force: true
+#      register: download_result
+#      until: download_result is succeeded
+#      retries: 5
+#      delay: 10
+#      vars:
+#        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+    - name: upload-iso-to-webserver
+      include_tasks: tasks/generic-tasks/tasks-upload-iso-to-webserver.yml
+      vars:
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+#    - name: Upload ISO file using HTTP POST
+#      uri:
+#        url: "{{ webserver_upload_url }}"
+#        method: POST
+#        user: "username"
+#        password: "password"
+#        force_basic_auth: yes
+#        body_format: form-multipart
+#        validate_certs: false
+#        src: /tmp/{{ iso_name }}
+#      register: upload_response
+#      vars:
+#        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+
+    - name: Debug upload response
+      debug:
+        var: upload_response
+
+
+
+    - name: attach ISO to worker BMs and power on
+      include_tasks: tasks/scale-out-cluster/task-attach-cdrom-bm.yml
+      vars:
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+
+    - name: Get  existing agents
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: Agent
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: all_agents
+      until: all_agents.resources | length == 1 + ( current_all_agents.resources | length )
+      retries: 180
+      delay: 10
+
+
+
+    - name: Get custom resource object names
+      set_fact:
+        custom_resource_names: "{{ all_agents.resources | map(attribute='metadata.name') | list }}"
+
+
+
+    - name: Update custom resource objects
+      k8s:
+        state: present
+        definition: |
+          apiVersion: agent-install.openshift.io/v1beta1
+          kind: Agent
+          metadata:
+            namespace: "{{ ocp_cluster }}-deploy"
+            name: "{{ item }}"
+          spec:
+            approved: true
+      with_items: "{{ custom_resource_names }}"
+
+    when: 
+      - ocpcluster[ocp_cluster].cluster_type  == "new"
+      - node_type == "baremetal"
+
+
+  - name: Scale out OCP cluster for VM infra nodes
+    block: 
+    - name: Get  existing agents
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: Agent
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: current_all_agents
+
+    - name: Create a new var for networking
+      set_fact: 
+        ip_subnet: "{{ machine_ip }}/{{ machine_net_mask }}"
+
+    - name: Set "vm_name" variable 
+      set_fact:
+        vm_name: "{{ hostname.split('.')[0] }}"
+
+
+    - name: Create a var file
+      ansible.builtin.lineinfile:
+        path: ./macaddress_list.yml
+        line: "vmmacs_variables:"
+        create: yes
+
+    - name: Translate parameters to VMware objects
+      include_tasks: tasks/scale-out-cluster/task-set-vmware-object-names.yml
+
+    - name: create the VM
+      include_tasks: tasks/scale-out-cluster/task-create-vm-scaleout.yml
+
+
+    - name: check mac address of the VM
+      include_tasks: tasks/scale-out-cluster/task-check-vm-mac.yaml
+
+
+
+    - name: Load vars from specific file
+      include_vars: macaddress_list.yml
+ 
+
+    - name: Generate YAML file
+      template:
+        src: nmstateconfig_vm.j2
+        dest: nmstateconfig.yml
+
+    - name: Create nmstateconfig
+      kubernetes.core.k8s:
+        state: present
+        src: nmstateconfig.yml
+
+    - name: Sleep for 1 min
+      shell: sleep 60
+
+    - name: Get InfraEnv
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: InfraEnv
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: InfraEnv
+ 
+    - name: Extract isoDownloadURL from the Kubernetes object
+      set_fact:
+        iso_location_minimal: "{{ InfraEnv.resources[0].status.isoDownloadURL }}"
+ 
+    - name: Extract isoDownloadURL from the Kubernetes object
+      set_fact:
+        iso_location: "{{ iso_location_minimal | replace('minimal.iso', 'full.iso') }}"
+
+    - name: Download ISO from URL
+      get_url:
+        url: "{{ iso_location  }}"  # URL to the ISO file
+        dest: /tmp/{{ iso_name }}
+        timeout: 720 #timeout hatası aldığı için arttırdım
+        validate_certs: false
+        force: true
+      register: download_result
+      until: download_result is succeeded
+      retries: 5
+      delay: 10
+      vars:
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+
+    - name: upload the iso file to VMware DS
+      include_tasks: tasks/scale-out-cluster/task-upload-iso-to-vmware-datastore.yml
+      vars:
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+
+
+    - name: attach ISO to infra VMs and power on
+      include_tasks: tasks/scale-out-cluster/task-attach-cdrom-vm.yml
+      vars:
+        iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
+
+
+    - name: Get  existing agents
+      k8s_info:
+        api_version: agent-install.openshift.io/v1beta1
+        kind: Agent
+        namespace: "{{ ocp_cluster }}-deploy"
+      register: all_agents
+      until: all_agents.resources | length == 1 + ( current_all_agents.resources | length )
+      retries: 180
+      delay: 10
+
+
+
+    - name: Get custom resource object names
+      set_fact:
+        custom_resource_names: "{{ all_agents.resources | map(attribute='metadata.name') | list }}"
+
+
+
+    - name: Update custom resource objects
+      k8s:
+        state: present
+        definition: |
+          apiVersion: agent-install.openshift.io/v1beta1
+          kind: Agent
+          metadata:
+            namespace: "{{ ocp_cluster }}-deploy"
+            name: "{{ item }}"
+          spec:
+            approved: true
+            nodeLabels:
+              node-role.kubernetes.io/infra: ''
+      with_items: "{{ custom_resource_names }}"
+
+    when: 
+      - ocpcluster[ocp_cluster].cluster_type  == "new"
+      - node_type == "virtualmachine"
+
+  - name: NMstateconfig TFS push
+    include_tasks: tasks/scale-out-cluster/task-git-push.yml

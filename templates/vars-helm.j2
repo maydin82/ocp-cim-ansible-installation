@@ -1,0 +1,79 @@
+### OCP stuff ###
+
+
+clusterName: "{{ ocp_cluster }}"
+namespace_name: "{{ ocp_cluster }}-deploy"
+baseDomain: "{{ ocp_domain }}"
+#apiVIP: 10.10.10.1 ### required for integrated deployments
+#imageSetName: img4.14.25-x86-64-appsub
+imageSetName: img{{ ocp_clusterversion }}-x86-64-appsub
+#ingressVIP: 10.10.10.2 required for integrated deployments
+platformType: None
+controlPlaneAgents: 3
+workerAgents: "{{ numberof_worker }}"
+pullSecret: "environments/pull-secret.json"
+
+dnsServers:
+{% for server in ocp_dnsservers %}
+  - {{ server }}
+{% endfor %}
+#dnsServers: 
+#  - 10.240.20.53
+#  - 172.31.147.68
+#  - 10.240.20.41
+defaultGateway: "{{ ocp_defaultgw }}"
+subnetmask: "{{ ocp_subnetmask }}"
+cluster_vlan_id: "{{ ocp_cluster_vlan_id }}"
+dnsSearchdomains:
+{% for server in ocp_dnssearchdomains %}
+  - {{ server }}
+{% endfor %}
+ntpservers:
+{% for server in ocp_ntpservers %}
+  - {{ server }}
+{% endfor %}
+#ntpservers: 
+#  - 192.168.9.246
+clusterCIDR: "{{ ocp_clusterCIDR }}"
+serviceCIDR: "{{ ocp_serviceCIDR }}"
+httpProxy: "{{ ocp_httpProxy }}"
+httpsProxy: "{{ ocp_httpsProxy }}"
+noProxy: "{{ ocp_noProxy }}"
+additionalca: "{{ ocp_additionalca }}"
+sshPublicKey: "{{ ocp_sshPublicKey }}"
+
+hosts:
+{% for node in ocpnodes_vms %}
+  - hostName: {{ node.vm_name }}
+    type: VM
+    vendor: vmware
+    role: {{ node.role }}
+    nics:
+      - nicName: ens192
+        ipAddress: {{ node.ip }}
+        ports:
+          - ens192
+        macAddresses:
+          ens192: {{ vmmacs_variables[node.vm_name] }}
+{% endfor %}
+
+{% for node in ocpnodes_bms %}
+  - hostName: {{ node.bm_name }}
+    type: BM
+    vendor: {{ node.bm_vendor }}
+    role: {{ node.role }}
+    defgwint: bond0.{{ ocp_cluster_vlan_id }}
+    nics:
+      - nicName: bond0
+        ipAddress: {{ node.ip }}
+        ports:
+{% for interface in node.mac_addresses.keys() %}
+          - {{ interface }}
+{% endfor %}
+        macAddresses:
+{% for interface, mac in node.mac_addresses.items() %}
+          {{ interface }}: {{ mac }}
+{% endfor %}
+    bondType: 802.3ad
+{% endfor %}
+

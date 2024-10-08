@@ -1,0 +1,30 @@
+- name: Check if a node with a specific IP is already added to the cluster
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars-ocp-clusters.yml
+  tasks:
+
+    - name: Gather all nodes in the Kubernetes cluster
+      kubernetes.core.k8s_info:
+        kind: Node
+        api_key: "{{ ocpcluster[ocp_cluster].api_key }}"
+        host: "{{ ocpcluster[ocp_cluster].host }}"
+        validate_certs: false
+      register: node_info
+
+
+    - name: Check if the provided IP matches the InternalIP in resources.status
+      set_fact:
+        data: "{{ node_info.resources | json_query('[*].status.addresses[*]') | default([]) }}"
+
+    - name: debug
+      debug:
+        var: data   
+
+
+    - name: Fail if provided IP matches any InternalIP
+      fail:
+        msg: "Match found: The provided IP '{{ machine_ip }}' matches an InternalIP at the cluster."
+      when: item.address == machine_ip and item.type == "InternalIP"
+      loop: "{{ data | flatten(1) }}"

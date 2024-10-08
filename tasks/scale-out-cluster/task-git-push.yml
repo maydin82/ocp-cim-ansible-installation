@@ -1,0 +1,66 @@
+    - name: Create key file
+      copy: 
+        dest: /tmp/git_key
+        content: "{{ ssh_private_key_for_tfs_repo }}" 
+        mode: 0600
+        owner: "{{ ansible_user }}" 
+        group: "{{ ansible_user }}"
+      no_log: true
+     
+
+    - name: Clone or update the Git repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        update: yes
+        key_file: /tmp/git_key
+        accept_hostkey: true
+
+
+
+    - name: Ensure the directory exists in the repository
+      file:
+        path: "{{ repo_dest }}/nmstateconfigs/{{ ocp_cluster }}"
+        state: directory
+
+
+    - name: Copy the local file to the specific directory in the repository
+      copy:
+        src: nmstateconfig.yml
+        dest: "{{ repo_dest }}/nmstateconfigs/{{ ocp_cluster }}/{{ hostname.split('.')[0] }}.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
+
+
+    - name: git config mail
+      shell: git config --global user.email "ansible@ansible.com"
+      args:
+        chdir: "{{ repo_dest }}"
+
+
+    - name: git config user
+      shell: git config --global user.name "OCPadmin otomasyon"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: git config ssh-key
+      shell: git config core.sshCommand "ssh -i /tmp/git_key"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: git add
+      shell: git add .
+      args:
+        chdir: "{{ repo_dest }}"
+
+
+    - name: git commit
+      shell: git commit -m "{{ hostname }}"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: git push
+      shell: git push
+      args:
+        chdir: "{{ repo_dest }}"

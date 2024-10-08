@@ -1,0 +1,44 @@
+---
+apiVersion: agent-install.openshift.io/v1beta1
+kind: NMStateConfig
+metadata:
+  labels:
+    cluster-name: {{ ocp_cluster }}
+  name: {{ hostname.split('.')[0] }}
+  namespace: {{ ocp_cluster }}-deploy
+spec:
+  config:
+    dns-resolver:
+      config:
+        server:
+{% set dns_servers = dns.split() %}
+{% for dns_server in dns_servers %}
+        - {{ dns_server }}
+{% endfor %}
+        search:
+{% set dns_search = dns_search_domains.split() %}
+{% for domain in dns_search %}
+        - {{ domain }}
+{% endfor %}
+    interfaces:
+      - ipv6:
+          enabled: false
+        ipv4:
+          address:
+          - ip: {{ machine_ip }}
+            prefix-length: "{{ ip_subnet | ipaddr('prefix') }}"
+          dhcp: false
+          enabled: true
+        name: ens192
+        state: up
+    routes:
+      config:
+        - destination: 0.0.0.0/0
+          next-hop-address: {{ machine_net_gw }}
+          next-hop-interface: ens192
+          table-id: 254
+  interfaces:
+  - macAddress: {{ vmmacs_variables[vm_name] }}
+    name: ens192
+
+

@@ -1,0 +1,12 @@
+  - name: Automatically approve the certificates
+    shell: |
+      while : ; do
+        certs=$(oc get csr --insecure-skip-tls-verify=true --token  {{ ocpcluster[ocp_cluster].api_key }} --server {{ ocpcluster[ocp_cluster].host }}  2> /dev/null | awk '$NF ~ /Pending/ {print $1}') 
+        [ ! -z "$certs" ] && echo -e "$certs" |  xargs oc adm certificate approve --insecure-skip-tls-verify=true --token  {{ ocpcluster[ocp_cluster].api_key }} --server {{ ocpcluster[ocp_cluster].host }}
+        sleep 5
+      done
+    async: 2400
+    poll: 30
+    ignore_errors: true
+
+

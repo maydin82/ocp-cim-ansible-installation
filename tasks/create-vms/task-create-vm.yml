@@ -1,0 +1,46 @@
+
+- name: Create a VM
+  vmware.vmware_rest.vcenter_vm:
+    vcenter_rest_log_file: /tmp/vmware_rest
+    placement:
+      cluster: "{{ cluster  }}"
+      datastore: "{{ datastore  }}"
+      folder: "{{ folder  }}"
+    name: "{{ item.vm_name }}"
+    guest_OS: RHEL_8_64
+    cpu:
+      count: "{{ item.cpu_count }}"
+      cores_per_socket: "{{ item.cores_per_socket }}"
+      hot_add_enabled: true
+      hot_remove_enabled: true
+    memory:
+      hot_add_enabled: false
+      size_MiB: "{{ item.memory }}"
+    disks:
+    - type: SCSI
+      new_vmdk:
+        name: "{{ item.vm_name }}-first_disk"
+        capacity: "{{item.disk_capacity }}"
+    cdroms:
+    - type: SATA
+      sata:
+        bus: 0
+        unit: 2
+    nics:
+      - start_connected: true
+        backing:
+          type: DISTRIBUTED_PORTGROUP
+          network: "{{ network  }}"
+  register: _result
+  ignore_errors: true
+
+
+- name: Set EnableUUID
+  community.vmware.vmware_guest:
+    name: '{{ item.vm_name }}'
+    advanced_settings:
+      - key: 'disk.EnableUUID'
+        value: "TRUE"
+
+- name: restlog
+  shell: cat /tmp/vmware_rest

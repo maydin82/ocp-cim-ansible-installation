@@ -1,0 +1,68 @@
+
+- name: Upload ISO to webserver
+  block:
+  
+  - name: Increment the retry count
+    set_fact:
+      retry_count: "{{ 0 if retry_count is undefined else retry_count | int + 1 }}"
+
+  - name: Generate local checksum (SHA256) of the ISO file
+    command: "sha256sum /tmp/{{ iso_name }}"
+    register: local_checksum
+
+  - name: Extract local checksum
+    set_fact:
+      local_checksum_value: "{{ local_checksum.stdout.split()[0] }}"
+
+
+
+  - name: Upload the ISO file to the web server
+    shell: curl --fail -u username:password -F path={{ iso_name }} -X POST -F file=@/tmp/{{ iso_name }} {{ webserver_upload_url }} -k
+
+
+  - name: Check if ISO exists on the web server
+    uri:
+      url: "{{ webserver_url }}/{{ iso_name }}"
+      method: HEAD
+      validate_certs: false
+    register: iso_check
+
+  - name: Download ISO from URL
+    get_url:
+      url: "{{ webserver_url }}/{{ iso_name }}"  # URL to the ISO file
+      dest: /tmp/temp-{{ iso_name }}
+      timeout: 720 #timeout hatası aldığı için arttırdım
+      validate_certs: false
+      force: true
+    register: download_result
+    until: download_result is succeeded
+    retries: 5
+    delay: 10
+
+
+  - name: Generate new checksum (SHA256) of the ISO file
+    command: "sha256sum /tmp/temp-{{ iso_name }}"
+    register: new_checksum
+
+  - name: Extract new checksum
+    set_fact:
+      new_checksum_value: "{{ new_checksum.stdout.split()[0] }}"
+
+
+  - name: Compare local and remote checksums
+    assert:
+      that:
+        - local_checksum_value == new_checksum_value
+      fail_msg: "The checksums do not match! File upload might have been corrupted."
+      success_msg: "The checksums match. File uploaded successfully."
+
+  rescue:
+    - fail:
+        msg: Maximum retries of grouped tasks reached
+      when: retry_count | int == 5
+
+    - name: Sleep for 1 min before re-check web server
+      shell: sleep 60
+      
+    - include_tasks: tasks-upload-iso-to-webserver.yml
+

@@ -1,0 +1,8 @@
+- name: Download test
+  hosts: localhost  # Specify the target host from your Ansible inventory
+  gather_facts: yes
+  tasks:
+
+
+  - name: Upload ISO to webserver
+    include_tasks: tasks/scale-out-cluster/task-download-iso-from-url.yml 

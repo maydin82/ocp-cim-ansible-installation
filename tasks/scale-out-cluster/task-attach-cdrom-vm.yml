@@ -1,0 +1,40 @@
+
+    - name: Look up the VM called {{ vm_name }} in the inventory
+      vmware.vmware_rest.vcenter_vm_info:
+        filter_names: "{{ vm_name }}"
+        vcenter_rest_log_file: /tmp/vmware-rest.log
+      register: search_result
+
+    - name: Check rest log
+      shell: cat /tmp/vmware-rest.log
+
+    - debug:
+        var: search_result
+
+    - name: Collect information about each VM
+      vmware.vmware_rest.vcenter_vm_info:
+        vm: '{{ search_result.value[0].vm }}'
+      register: my_vms
+
+    - debug:
+        var: my_vms      
+
+    - name: Attach ISO to VMs
+      vmware.vmware_rest.vcenter_vm_hardware_cdrom:
+        vm: '{{ search_result.value[0].vm }}'
+        type: IDE
+        start_connected: true
+        allow_guest_control: true
+        vcenter_rest_log_file: /tmp/log
+        ide:
+          primary: true
+          master: true
+        backing:
+          iso_file: '[{{ datastore_name }}] iso/{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso'
+          type: ISO_FILE
+
+
+    - name: power on the VM
+      vmware.vmware_rest.vcenter_vm_power:
+        state: start
+        vm: '{{ search_result.value[0].vm }}'

@@ -1,0 +1,10 @@
+- name: "Create a new VM at VMWARE"
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  
+  tasks:
+    - include_vars: vars-create-{{ ocp_cluster }}-from-acm.yml
+    - include_tasks: tasks/create-vms/task-set-vmware-object-names.yml
+    - include_tasks: tasks/create-vms/task-create-vm.yml
+      loop: "{{ ocpnodes_vms }}"

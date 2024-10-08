@@ -1,0 +1,38 @@
+
+- name: Build a list of all the folders
+  vmware.vmware_rest.vcenter_folder_info:
+    filter_type: VIRTUAL_MACHINE
+    filter_names:
+    - "{{ folder_name }}"
+  register: my_folder
+
+- name: Set the actual folder  
+  set_fact:
+    folder: "{{ my_folder.value[0].folder }}"
+
+- name: Build a list of all the clusters
+  vmware.vmware_rest.vcenter_cluster_info:
+    filter_names: "{{ cluster_name }}"
+  register: the_cluster
+
+- name: Set the actual cluster
+  set_fact:
+    cluster: "{{ the_cluster.value[0].cluster }}"
+
+- name: Build a list of all the datastores
+  vmware.vmware_rest.vcenter_datastore_info:
+    filter_names: "{{ datastore_name }}"
+  register: the_datastore
+
+- name: Set the actual datastore
+  set_fact:
+    datastore: "{{ the_datastore.value[0].datastore }}"
+
+- name: Get the dvswitch called my-portgroup
+  vmware.vmware_rest.vcenter_network_info:
+    filter_names: "{{ network_name }}"
+  register: my_portgroup
+
+- name: Set the actual network
+  set_fact:
+    network: "{{ my_portgroup.value[0].network }}"

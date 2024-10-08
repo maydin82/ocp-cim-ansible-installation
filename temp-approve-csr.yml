@@ -1,0 +1,17 @@
+---
+##########
+- name: Create customized ISO file and attach to the BMs
+  hosts: localhost
+  become: false
+  gather_facts: false
+  vars_files:
+    - add-bm-vars.yml
+    - vars-ocp-clusters.yml
+  tasks:
+  - name: Create customized ISO file and attach to the BMs
+    block:
+
+      - name: Approve CSRs
+        include_tasks: tasks/task-approve-csr.yml
+
+    when: ocpcluster[ocp_cluster].cluster_type  == "old"

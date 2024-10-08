@@ -1,0 +1,41 @@
+- name: Decommission of  {{ ocp_cluster }} VMs
+  hosts: localhost  # Specify the target host from your Ansible inventory
+  gather_facts: no
+  vars_files:
+    - vars-create-{{ ocp_cluster }}-from-acm.yml
+  tasks:
+
+    - name: Deatach the cluster from ACM
+      kubernetes.core.k8s:
+        api_version: cluster.open-cluster-management.io/v1
+        kind: ManagedCluster
+        name: "{{ ocp_cluster }}"
+        state: absent
+
+
+    - name: Find hosts with type VM
+      set_fact:
+        vm_hosts: "{{ ocpnodes_vms }}"
+
+    - name: Remove VMs 
+      include_tasks: tasks/decom-cluster/tasks-remove-vms.yml
+      loop: "{{ ocpnodes_vms }}"
+
+    - name: Remove the existing iso file from DS
+      include_tasks: tasks/decom-cluster/tasks-delete-iso-from-vmware-datastore.yml
+      when: vm_hosts | length > 0
+
+    - name: Poweroff BM servers
+      include_tasks: tasks/decom-cluster/tasks-remove-bms.yml
+      loop: "{{ ocpnodes_bms }}"
+
+
+    - name: Check Helm list
+      shell: helm list --kube-insecure-skip-tls-verify --namespace test-ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }} | grep {{ ocp_cluster }}
+      register: helm_status
+      ignore_errors: true
+
+    - name: Delete Helm chart
+      shell: helm delete {{ ocp_cluster }} --kube-insecure-skip-tls-verify --namespace test-ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }}
+      when: helm_status.rc == 0
+
