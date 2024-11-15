@@ -1,6 +1,6 @@
 ---
 - name: curl upload
-  shell: curl -vv --insecure --upload-file /tmp/{{ iso_name }} -u {{ lookup('ansible.builtin.env', 'VMWARE_USER') }}:'{{ lookup('ansible.builtin.env', 'VMWARE_PASSWORD') }}' "https://{{ lookup('ansible.builtin.env', 'VMWARE_HOST') }}/folder/iso/{{ iso_name }}?dcPath={{ datacenter_name2 }}&dsName={{ datastore_name }}"
+  shell: curl -vv --insecure --upload-file /tmp/{{ iso_name }} -u {{ lookup('ansible.builtin.env', 'VMWARE_USER') }}:'{{ lookup('ansible.builtin.env', 'VMWARE_PASSWORD') }}' "https://{{ lookup('ansible.builtin.env', 'VMWARE_HOST') }}/folder/iso/{{ iso_name }}?dcPath={{ datacenter_name }}&dsName={{ datastore_name }}"
 
 #- name: Upload ISO to VMware Datastore
 #  community.vmware.vsphere_copy:
