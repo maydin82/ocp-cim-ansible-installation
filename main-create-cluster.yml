@@ -3,7 +3,6 @@
   gather_facts: no
   vars_files:
     - vars-create-{{ ocp_cluster }}-from-acm.yml
-    - vars-ocp-clusters.yml
   tasks:
   - name: Create cluster on ACM with HELM
     block:
@@ -52,11 +51,10 @@
       shell: cat ./vars-{{ ocp_cluster }}.yaml
 
     - name: Check Helm list
-      shell: helm list --kube-insecure-skip-tls-verify --namespace test-ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }} | grep {{ ocp_cluster }}
+      shell: helm list --kube-insecure-skip-tls-verify --namespace ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }} | grep {{ ocp_cluster }}
       register: helm_status
       ignore_errors: true      
 
     - name: Install helm chart to ACM
-      shell: helm upgrade --install {{ ocp_cluster }} ./helm-create-cluster/ -f ./vars-{{ ocp_cluster }}.yaml --kube-insecure-skip-tls-verify --namespace test-ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }}
+      shell: helm upgrade --install {{ ocp_cluster }} ./helm-create-cluster/ -f ./vars-{{ ocp_cluster }}.yaml --kube-insecure-skip-tls-verify --namespace ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }}
 
-    when: ocpcluster[ocp_cluster].cluster_type  == "new"

@@ -6,10 +6,10 @@ metadata:
   name: {{ .Values.clusterName }}
   namespace: {{ .Values.namespace_name }}
 spec:
-  proxy:
-    httpProxy: {{ .Values.httpProxy }}
-    httpsProxy: {{ .Values.httpsProxy }}
-    noProxy: {{ .Values.noProxy }}
+  #proxy:
+  #  httpProxy: {{ .Values.httpProxy }}
+  #  httpsProxy: {{ .Values.httpsProxy }}
+  #  noProxy: {{ .Values.noProxy }}
   clusterDeploymentRef:
     name: {{ .Values.clusterName }}
   imageSetRef:

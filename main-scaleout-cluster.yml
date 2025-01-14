@@ -5,7 +5,7 @@
     - vars-scale-out.yaml
     - vars-ocp-clusters.yml
   vars:
-    repo_url: ##TODO git repo here##
+    repo_url: https://dev.azure.com/fodevops/Openshift/_git/OpenshiftAnsibleInstallation
     repo_dest: "/tmp/repo"   
   tasks:
 
@@ -150,9 +150,9 @@
       set_fact: 
         ip_subnet: "{{ machine_ip }}/{{ machine_net_mask }}"
 
-    - name: Set "vm_name" variable 
-      set_fact:
-        vm_name: "{{ hostname.split('.')[0] }}"
+          #- name: Set "vm_name" variable 
+          #set_fact:
+          #vm_name: "{{ hostname.split('.')[0] }}"
 
 
     - name: Create a var file
@@ -269,6 +269,7 @@
     when: 
       - ocpcluster[ocp_cluster].cluster_type  == "new"
       - node_type == "virtualmachine"
-
-  - name: NMstateconfig TFS push
-    include_tasks: tasks/scale-out-cluster/task-git-push.yml
+      
+# Clustera node eklendikten sonra nmstate çıktısını git e atamadığından yorum satırına alınmıştır
+#  - name: NMstateconfig TFS push
+#    include_tasks: tasks/scale-out-cluster/task-git-push.yml

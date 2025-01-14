@@ -18,13 +18,11 @@ spec:
   pullSecretRef:
     name: {{ .Values.pullSecretName | default (printf "pull-secret-%s" .Values.clusterName) }}
   sshAuthorizedKey: {{ .Values.sshPublicKey }}
-  proxy:
-    httpProxy: {{ .Values.httpProxy }}
-    httpsProxy: {{ .Values.httpsProxy }}
-    noProxy: {{ .Values.noProxy }}
+  #proxy:
+  #  httpProxy: {{ .Values.httpProxy }}
+  #  httpsProxy: {{ .Values.httpsProxy }}
+  #  noProxy: {{ .Values.noProxy }}
   additionalNTPSources:
     {{- range $.Values.ntpservers }}
     - {{ . }}
     {{- end }} 
-  additionalTrustBundle: |-
-    ## TODO ##

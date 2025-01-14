@@ -1,0 +1,30 @@
+    - name: Wait until Agent resources meet conditions
+      block:
+        - name: Increment the retry count
+          set_fact:
+            retry_count: "{{ 0 if retry_count is undefined else retry_count | int + 1 }}"
+
+        - name: Fetch Agent resources
+          k8s_info:
+            api_version: agent-install.openshift.io/v1beta1
+            kind: Agent
+            namespace: "{{ ocp_cluster }}-deploy"
+          register: all_agents
+        - name: Print agents values
+          debug: 
+            msg: "{{ all_agents.resources | selectattr('status.inventory.hostname', 'defined') | map(attribute='status.inventory.hostname') | list | length }}"
+
+        - name: Validate Agent resource count and hostname conditions
+          assert:
+            that:
+              - (all_agents.resources | selectattr('status.inventory.hostname', 'defined') | map(attribute='status.inventory.hostname') | list | length | int ) == (expected_count | int)
+            fail_msg: "Agents are not ready"
+            success_msg: "Agents are ready"
+      rescue:
+        - name: Fail if retries are exhausted
+          fail:
+            msg: "Conditions were not met within the retry limit. Not all Agent resources are ready."
+          when: retry_count|int == 30 
+        - name: Sleep for 1 minute
+          shell: sleep 60  
+        - include_tasks: task-control-agent-number.yml   

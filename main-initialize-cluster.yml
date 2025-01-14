@@ -84,9 +84,10 @@
     - name: Approve Master nodes
       include_tasks: tasks/initialize-cluster/task-master-approve-hosts.yml
 
-    - name: attach ISO to infra VMs and power on
+    - name: attach ISO to router VMs and power on
       include_tasks: tasks/initialize-cluster/task-attach-cdrom-vm.yml
       when:
+        - item.role2 is defined
         - item.role == 'infra'
       loop: "{{ ocpnodes_vms }}"
 
@@ -108,3 +109,4 @@
 
     - name: Approve worker nodes
       include_tasks: tasks/initialize-cluster/task-worker-approve-hosts.yml
+

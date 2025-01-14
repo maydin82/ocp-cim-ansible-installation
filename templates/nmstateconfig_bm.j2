@@ -22,7 +22,11 @@ spec:
 {% endfor %}
     interfaces:
       - ipv4:
-          enabled: false
+          address:
+          - ip: {{ machine_ip }}
+            prefix-length: "{{ ip_subnet | ipaddr('prefix') }}"
+          dhcp: false
+          enabled: true
         ipv6:
           enabled: false
         link-aggregation:
@@ -38,27 +42,11 @@ spec:
         name: bond0
         state: up
         type: bond
-
-      - name: bond0.{{ vlan }}
-        type: vlan
-        state: up
-        ipv4:
-          address:
-          - ip: {{ machine_ip }}
-            prefix-length: "{{ ip_subnet | ipaddr('prefix') }}"
-          dhcp: false
-          enabled: true
-        ipv6:
-          enabled: false
-        vlan:
-          base-iface: bond0
-          id: {{ vlan }}
-
     routes:
       config:
         - destination: 0.0.0.0/0
           next-hop-address: {{ machine_net_gw }}
-          next-hop-interface: bond0.{{ vlan }}
+          next-hop-interface: bond0
           table-id: 254
   interfaces:
 {% set nics = machine_nics.split() %}

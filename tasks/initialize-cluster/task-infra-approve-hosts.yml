@@ -1,21 +1,62 @@
-
-    - name: Get  existing agents
-      k8s_info:
-        api_version: agent-install.openshift.io/v1beta1
-        kind: Agent
-        namespace: "{{ ocp_cluster }}-deploy"
-      register: all_agents
-      until: all_agents.resources | length == (ocpnodes_vms | selectattr('role', 'equalto', 'infra') | length) + 3
-      retries: 180
-      delay: 10
-
-
-    - name: Set the variable which includes name of agent objects
+    - name: Calculate the expected count of Agent resources
       set_fact:
-        custom_resource_names: "{{ all_agents.resources | selectattr('status.role', 'match', 'worker|auto-assign') | map(attribute='metadata.name') | list }}"
+        expected_count: >-
+          {{ ocpnodes_vms | selectattr('role', 'equalto', 'master') | list | length 
+             + ocpnodes_vms | selectattr('role', 'equalto', 'infra') | list | length }}
 
+    - name: Wait for the agents to become ready
+      include_tasks: tasks/initialize-cluster/task-control-agent-number.yml
 
-        
+    - name: Create a dictionary of hostnames by role
+      set_fact:
+        role_to_hostnames: "{{ role_to_hostnames | default({}) | combine({ item.role2: (role_to_hostnames[item.role2] | default([])) + [item.hostname] }) }}"
+      loop: "{{ ocpnodes_vms }}"
+      when: 
+        - item.role2 is defined
+        - item.role == "infra"
+      loop_control:
+        label: "{{ item.vm_name }}"
+
+    - name: Print Matched vms
+      debug:
+        var: role_to_hostnames
+
+    - name: Initialize a list for matching agent names
+      set_fact:
+        matching_agents: []
+    
+    - name: Compare hostnames between k8s agents and ocpnodes_vms
+      set_fact:
+        matching_agents: "{{ matching_agents + [item] }}"
+      loop: "{{ all_agents.resources }}"
+      when: >
+        item.status.inventory.hostname in role_to_hostnames['infra-generic'] or
+        item.status.inventory.hostname in role_to_hostnames['router'] or
+        item.status.inventory.hostname in role_to_hostnames['storage']
+    
+    - name: Print agent hostnames
+      debug:
+        var: item.status.inventory.hostname
+      loop: "{{ all_agents.resources }}"
+
+    - name: Print Matched agents
+      debug:
+        var: matching_agents
+    
+    - name: Assign roles to agents
+      set_fact:
+        enriched_agents: >-
+          {{
+            enriched_agents | default([]) +
+            [dict(
+              item,
+              role=(role_to_hostnames | dict2items | selectattr('value', 'contains', item.status.inventory.hostname) | map(attribute='key') | first | default('unknown'))
+            )]
+          }}
+      with_items: "{{ matching_agents }}"
+      loop_control:
+        label: "{{ item.metadata.name }}"
+
     - name: Update custom resource objects
       k8s:
         state: present
@@ -24,12 +65,10 @@
           kind: Agent
           metadata:
             namespace: "{{ ocp_cluster }}-deploy"
-            name: "{{ item }}"
+            name: "{{ item.metadata.name }}"
           spec:
             approved: true
             nodeLabels:
               node-role.kubernetes.io/infra: ''
-      with_items: "{{ custom_resource_names }}"
-
-
-
+              node-role.kubernetes.io/{{ item.role }}: ''
+      with_items: "{{ enriched_agents }}"

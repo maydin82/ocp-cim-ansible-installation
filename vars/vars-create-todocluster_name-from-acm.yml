@@ -1,32 +1,34 @@
-#ansible_python_interpreter: /usr/bin/python3
+#ansible_python_interpreter: /usr/bin/python3 
 
-datacenter_name: "SAMPLEDC"  ##TODO VMware DC name
+datacenter_name: "Golcuk Prod"  ##TODO VMware DC name
+datacenter_name2: "Golcuk%2FGolcuk%20Prod"
 cluster_name: "SAMPLECLUSTER" ##TODO VMware CLUSTER name
-datastore_name: "SAMPLEDS" ##TODO VMware DS name  
+datastore_name: "SAMPLEDS" ##TODO VMware DS name
 folder_name: "SAMPLEFOLDER" ## TODO VMware folder name
 network_name: "SAMPLENETWORK"  ## TODO VMware network name
 ocp_cluster_vlan_id: 116  ## TODO vlan ID if BM network is in trunk mode
 
 iso_name: "{{ ocp_cluster }}.iso"
 scale_out_iso_name: "{{ ocp_cluster }}-{{ ansible_date_time.iso8601 }}.iso"
-webserver_url: https://webserver.company.com 
-webserver_upload_url: https://webserver.company.com/upload 
+webserver_url: https://webserver.company.com
+webserver_upload_url: https://webserver.company.com/upload
 
-ocp_clusterversion: 4.14.9  ## Set it to the OCP cluster version 
+ocp_clusterversion: 4.14.40  ## Set it to the OCP cluster version 
 
-ocp_domain: company.com 
-ocp_dnsservers:  
+
+ocp_domain: company.com
+ocp_dnsservers:
   - 10.10.10.1
   - 10.10.10.2
   - 10.10.10.3
 ocp_dnssearchdomains:
-  - company.com 
+  - company.com
 
 ocp_defaultgw: 192.168.1.1
 ocp_subnetmask: 24
 
-ocp_ntpservers: #zone'a gore degistirilecek
-  - 10.10.10.5 
+ocp_ntpservers: 
+  - 10.10.10.5
 
 ocp_clusterCIDR: 10.128.0.0/14
 ocp_serviceCIDR: 172.30.0.0/16
@@ -34,65 +36,110 @@ ocp_serviceCIDR: 172.30.0.0/16
 numberof_worker: 2
 
 ocpnodes_vms:
-  - vm_name: master01 ## this will be the vm name on vmware, not the ocp node name
+  - vm_name: master1 ## this will be the vm name on vmware, not the ocp node name
+    hostname: master1.company.com
     role: master
+    role2: master
     ip: 192.168.1.2
-    memory: 20000
-    disk_capacity: 100000000000
+    memory: 32768
+    disk_capacity: 214748364800
     cpu_count: 8
     cores_per_socket: 1
-  - vm_name: master02
+
+  - vm_name: master2 ## this will be the vm name on vmware, not the ocp node name
+    hostname: master2.company.com
     role: master
+    role2: master
     ip: 192.168.1.3
-    memory: 20000
-    disk_capacity: 100000000000
+    memory: 32768
+    disk_capacity: 214748364800
     cpu_count: 8
     cores_per_socket: 1
-  - vm_name: master03
+
+  - vm_name: master3 ## this will be the vm name on vmware, not the ocp node name
+    hostname: master3.company.com
     role: master
+    role2: master
     ip: 192.168.1.4
-    memory: 20000
-    disk_capacity: 100000000000
+    memory: 32768
+    disk_capacity: 214748364800
     cpu_count: 8
     cores_per_socket: 1
-  - vm_name: worker01
+
+
+  - vm_name: infra1
+    hostname: infra1.company.com
     role: infra
+    role2: infra-generic
     ip: 192.168.1.5
-    memory: 16000
-    disk_capacity: 100000000000
+    memory: 32768
+    disk_capacity: 214748364800
     cpu_count: 10
     cores_per_socket: 1
-  - vm_name: worker02
+
+
+  - vm_name: infra2
+    hostname: infra2.company.com
     role: infra
+    role2: infra-generic
     ip: 192.168.1.6
-    memory: 16000
-    disk_capacity: 100000000000
+    memory: 32768
+    disk_capacity: 214748364800
     cpu_count: 10
     cores_per_socket: 1
 
+  - vm_name: infra3
+    hostname: infra3.company.com
+    role: infra
+    role2: infra-generic
+    ip: 192.168.1.7
+    memory: 32768
+    disk_capacity: 214748364800
+    cpu_count: 10
+    cores_per_socket: 1
 
-ocpnodes_bms: []
-# - bm_name: workerbm01
-#   role: worker
-#   ip: 192.168.1.7
-#   redfish_baseuri: 4.4.4.4
-#   redfish_username: root
-#   redfish_password: calvin
-#   bm_vendor: dell
-#   mac_addresses:
-#     eno12399: "b4:83:51:0b:cd:38"
-#     ens4f0: "c4:cb:e1:a6:8f:f1"
-#   scale_out: "yes"
+  - vm_name: router1
+    hostname: router1.company.com
+    role: infra
+    role2: router
+    ip: 192.168.1.8
+    memory: 8192
+    disk_capacity: 214748364800
+    cpu_count: 2
+    cores_per_socket: 1
+
+  - vm_name: router2
+    hostname: router2.company.com
+    role: infra
+    role2: router
+    ip: 192.168.1.9
+    memory: 8192
+    disk_capacity: 214748364800
+    cpu_count: 2
+    cores_per_socket: 1
 
 
-ocp_httpProxy: http://proxy.company.com:8080
-ocp_httpsProxy: http://proxy.company.com:8080
-ocp_noProxy: ##TODO ##
+ocpnodes_bms: #[]
+  - bm_name: TODO
+    role: worker
+    role2: dellbm
+    ip: TODO
+    redfish_baseuri: TODO
+    redfish_username: TODO
+    redfish_password: TODO
+    bm_vendor: dell
+    mac_addresses:
+      eno12399np0: "TODO"
+      ens7f1np1: "TODO"
+    scale_out: "no"
 
-
+#ocp_httpProxy: ##http://proxy.company.com:8080
+#ocp_httpsProxy: #http://proxy.company.com:8080
+#ocp_noProxy: ##TODO ##
 
 ocp_additionalca: |-
   ## TODO any additional CAs here##
 
 ocp_sshPublicKey: |-
   ## core user public key ##
+  

@@ -14,15 +14,15 @@ data:
       nodePlacement:
         nodeSelector:
           matchLabels:
-            node-role.kubernetes.io/infra: ""
+            node-role.kubernetes.io/router: ""
         tolerations:
         - effect: NoSchedule
-          key: node-role.kubernetes.io/infra
+          key: node-role.kubernetes.io/router
           value: reserved
         - effect: NoExecute
-          key: node-role.kubernetes.io/infra
+          key: node-role.kubernetes.io/router
           value: reserved
-      replicas: 2
+      replicas: 3
       httpEmptyRequestsPolicy: Respond
       tlsSecurityProfile:
         custom:

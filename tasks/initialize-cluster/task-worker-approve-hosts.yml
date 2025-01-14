@@ -1,3 +1,10 @@
+    - name: Calculate the expected count of Agent resources
+      set_fact:
+        expected_count: "{{ numberof_worker + 3 }}"
+
+    - name: Wait for the agents to become ready
+      include_tasks: tasks/initialize-cluster/task-control-agent-number.yml
+
 
     - name: Get  existing agents
       k8s_info:
@@ -15,6 +22,24 @@
         custom_resource_names: "{{ all_agents.resources | map(attribute='metadata.name') | list }}"
 
 
+    - name: Populate hostnames based on reverse DNS lookup
+      set_fact:
+        agent_hostnames: "{{ agent_hostnames | default({}) | combine({ item.metadata.name: (lookup('community.general.dig', ipv4_address + '/PTR') | regex_replace('\\.$', '') ) }) }}"
+      with_items: "{{ all_agents.resources }}"
+      vars:
+        ipv4_address: >-
+          {{
+            item.status.inventory.interfaces |
+            selectattr('name', 'in', ['ens192', 'bond0']) |
+            map(attribute='ipV4Addresses') |
+            first |
+            default([]) |
+            first |
+            default('') |
+            regex_replace('/.*', '')
+          }}
+      when: ipv4_address != ''
+
         
     - name: Update custom resource objects
       k8s:
@@ -24,10 +49,11 @@
           kind: Agent
           metadata:
             namespace: "{{ ocp_cluster }}-deploy"
-            name: "{{ item }}"
+            name: "{{ item.key }}"
           spec:
             approved: true
-      with_items: "{{ custom_resource_names }}"
+            hostname: "{{ item.value }}"
+      with_dict: "{{ agent_hostnames }}"
 
 
 

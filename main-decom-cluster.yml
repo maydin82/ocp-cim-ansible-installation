@@ -31,11 +31,11 @@
 
 
     - name: Check Helm list
-      shell: helm list --kube-insecure-skip-tls-verify --namespace test-ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }} | grep {{ ocp_cluster }}
+      shell: helm list --kube-insecure-skip-tls-verify --namespace ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }} | grep {{ ocp_cluster }}
       register: helm_status
       ignore_errors: true
 
     - name: Delete Helm chart
-      shell: helm delete {{ ocp_cluster }} --kube-insecure-skip-tls-verify --namespace test-ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }}
+      shell: helm delete {{ ocp_cluster }} --kube-insecure-skip-tls-verify --namespace ocp-install --kube-apiserver {{ lookup('env', 'K8S_AUTH_HOST') }}  --kube-token {{ lookup('env', 'K8S_AUTH_API_KEY') }}
       when: helm_status.rc == 0
 

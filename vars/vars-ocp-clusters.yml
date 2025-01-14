@@ -1,14 +1,12 @@
 ocpcluster:
-  ##TODO cluster_name##:
-    api_key: ## TODO API Key here ##
-    host: https://api.###TODO cluster_name##.##TODO cluster_domain##:6443
+  dev-zion:
+    api_key: #TODO
+    host: https://api.clustername1.domain:6443
     cluster_type: new
-
-  ##TODO cluster_name##:
-    api_key: ## TODO API Key here ##
-    host: https://api.###TODO cluster_name##.##TODO cluster_domain##:6443
-    cluster_type: old
-
+  test-zion:
+    api_key: #TODO
+    host: https://api.clustername2.domain:6443
+    cluster_type: new
 
 live_iso_images:
   4.12.0:
@@ -23,6 +21,8 @@ live_iso_images:
   4.14.14:
     checksum: md5:de04b411834057be0c5e6e149154e020
     iso_label: rhcos-414.92.202402130420-0
-
+  4.13.10:
+    checksum: md5:a66a9a8031ae452ea9edccf95b775b5b
+    iso_label: rhcos-413.92.202307260246-0
 ssh_private_key_for_tfs_repo: |
-  ##TODO## ## GIT private key 
+  #TODO

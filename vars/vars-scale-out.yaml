@@ -1,2 +1,2 @@
-webserver_url: ## TODO webserver_url ##
-webserver_upload_url: ## TODO webserver_upload_url ##
+webserver_url: https://upload-server-web-server-install.apps.zion.ford.com.tr
+webserver_upload_url: https://upload-server-web-server-install.apps.zion.ford.com.tr/upload

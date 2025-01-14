@@ -36,10 +36,6 @@ ntpservers:
 #  - 192.168.9.246
 clusterCIDR: "{{ ocp_clusterCIDR }}"
 serviceCIDR: "{{ ocp_serviceCIDR }}"
-httpProxy: "{{ ocp_httpProxy }}"
-httpsProxy: "{{ ocp_httpsProxy }}"
-noProxy: "{{ ocp_noProxy }}"
-additionalca: "{{ ocp_additionalca }}"
 sshPublicKey: "{{ ocp_sshPublicKey }}"
 
 hosts:
@@ -62,7 +58,7 @@ hosts:
     type: BM
     vendor: {{ node.bm_vendor }}
     role: {{ node.role }}
-    defgwint: bond0.{{ ocp_cluster_vlan_id }}
+    defgwint: bond0
     nics:
       - nicName: bond0
         ipAddress: {{ node.ip }}

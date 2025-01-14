@@ -1,11 +1,11 @@
     - name: Create key file
       copy: 
-        dest: /tmp/git_key
+        dest: ./git_key
         content: "{{ ssh_private_key_for_tfs_repo }}" 
         mode: 0600
         owner: "{{ ansible_user }}" 
         group: "{{ ansible_user }}"
-      no_log: true
+      no_log: false
      
 
     - name: Clone or update the Git repository
@@ -13,8 +13,8 @@
         repo: "{{ repo_url }}"
         dest: "{{ repo_dest }}"
         update: yes
-        key_file: /tmp/git_key
-        accept_hostkey: true
+        key_file: ./git_key
+        accept_hostkey: false
 
 
 
@@ -45,7 +45,7 @@
         chdir: "{{ repo_dest }}"
 
     - name: git config ssh-key
-      shell: git config core.sshCommand "ssh -i /tmp/git_key"
+      shell: git config core.sshCommand "ssh -i ./git_key"
       args:
         chdir: "{{ repo_dest }}"
 

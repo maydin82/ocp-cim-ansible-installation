@@ -22,11 +22,7 @@ spec:
     interfaces:
       {{- if eq (len (index $host.nics 0 "ports")) 2 }}
       - ipv4:
-          address:
-          - ip: {{ index $host.nics 0 "ipAddress" }}
-            prefix-length: {{ $.Values.subnetmask }}
-          dhcp: false
-          enabled: true
+          enabled: false
         ipv6:
           enabled: false
         link-aggregation:
@@ -35,6 +31,7 @@ spec:
             {{- if eq (index $host "bondType") "802.3ad" }}
             lacp_rate: 1
             {{- else }}
+            all_slaves_active: delivered
             miimon: "100"
             {{- end }}
           port:
@@ -44,7 +41,22 @@ spec:
         name: {{ index $host.nics 0 "nicName" }}
         state: up
         type: bond
-      
+
+      - name: {{ index $host.nics 0 "nicName" }}.{{ $.Values.cluster_vlan_id }}
+        type: vlan
+        state: up
+        ipv4:
+          address:
+          - ip: {{ index $host.nics 0 "ipAddress" }}
+            prefix-length: {{ $.Values.subnetmask }}
+          dhcp: false
+          enabled: true
+        ipv6:
+          enabled: false
+        vlan:
+          base-iface: {{ index $host.nics 0 "nicName" }}
+          id: {{ $.Values.cluster_vlan_id }}
+
         {{- else }}
       - ipv4:
           address:
